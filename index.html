@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>大田原農場 管理</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+body { font-family: -apple-system, 'Hiragino Sans', 'Yu Gothic UI', 'Meiryo', sans-serif; background: #f0f2f5; color: #333; overscroll-behavior: none; }
+
+/* Header */
+.header { background: linear-gradient(135deg, #1a5276, #2980b9); color: white; padding: 10px 12px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 50; }
+.header h1 { font-size: 15px; font-weight: 600; }
+.header-actions { display: flex; gap: 6px; }
+.header-actions button { background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); color: white; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 12px; }
+.header-actions button.mode-active { background: #e74c3c; border-color: #e74c3c; font-weight: 700; }
+
+/* Tabs */
+.tabs { display: flex; background: white; border-bottom: 2px solid #e0e0e0; position: sticky; top: 41px; z-index: 49; }
+.tab { flex: 1; padding: 10px 4px; cursor: pointer; font-size: 13px; font-weight: 500; border-bottom: 3px solid transparent; color: #888; text-align: center; transition: all 0.2s; }
+.tab.active { color: #2980b9; border-bottom-color: #2980b9; font-weight: 700; background: #f0f7ff; }
+
+/* Legend */
+.legend { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 10px; background: white; border-bottom: 1px solid #e0e0e0; }
+.legend-item { display: flex; align-items: center; gap: 3px; font-size: 11px; color: #555; }
+.legend-color { width: 14px; height: 14px; border-radius: 3px; border: 1px solid #ccc; }
+
+/* Stats bar */
+.stats-bar { display: flex; flex-wrap: wrap; gap: 8px; padding: 8px 10px; background: white; border-bottom: 1px solid #e0e0e0; font-size: 12px; }
+.stat-item { color: #555; }
+.stat-item strong { color: #2980b9; }
+
+/* Layout */
+.layout-container { padding: 10px; padding-bottom: 80px; overflow: auto; -webkit-overflow-scrolling: touch; }
+
+/* Building */
+.building { display: inline-block; border: 3px solid #555; background: #fafafa; border-radius: 4px; }
+.building-label { text-align: center; font-weight: 700; font-size: 13px; padding: 5px; background: #555; color: white; }
+
+/* Pen grid */
+.pen-section { display: flex; }
+.pen-cell {
+  width: 56px; height: 32px; border: 1px solid #aaa; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 600; transition: background 0.15s;
+  user-select: none; -webkit-user-select: none; position: relative;
+}
+.pen-cell:active { opacity: 0.7; }
+.pen-cell.selected { outline: 3px solid #e74c3c; outline-offset: -3px; z-index: 2; }
+.pen-cell.selected::after {
+  content: ''; position: absolute; top: 2px; right: 2px;
+  width: 10px; height: 10px; background: #e74c3c; border-radius: 50%;
+}
+
+/* Corridor */
+.corridor { height: 14px; background: #e0e0e0; border-left: 1px solid #aaa; border-right: 1px solid #aaa; display: flex; align-items: center; justify-content: center; }
+.corridor span { font-size: 9px; color: #888; }
+
+/* Column gap */
+.col-gap { width: 6px; background: #e0e0e0; }
+
+/* Entrance */
+.entrance { text-align: center; padding: 4px; font-size: 11px; font-weight: 700; color: #666; background: #e0e0e0; border-top: 2px solid #555; }
+
+/* Status colors */
+.status-empty { background: #f5f5f5; }
+.status-pregnant { background: #a8e6cf; }
+.status-nursing { background: #74b9ff; color: white; }
+.status-treating { background: #ffd93d; }
+.status-cull { background: #ff6b6b; color: white; }
+.status-growing { background: #f8c291; }
+.status-wean-back { background: #a29bfe; color: white; }
+.status-recur { background: #fd79a8; color: white; }
+.status-not-estrus { background: #b2bec3; }
+
+/* Floating bar for multi-select */
+.float-bar {
+  display: none; position: fixed; bottom: 0; left: 0; right: 0;
+  background: #2c3e50; color: white; padding: 10px 16px;
+  padding-bottom: calc(10px + env(safe-area-inset-bottom, 0));
+  z-index: 100; align-items: center; justify-content: space-between;
+  box-shadow: 0 -4px 12px rgba(0,0,0,0.2);
+}
+.float-bar.show { display: flex; }
+.float-bar .count { font-size: 14px; font-weight: 700; }
+.float-bar button {
+  padding: 10px 20px; border: none; border-radius: 8px; font-size: 14px;
+  font-weight: 700; cursor: pointer;
+}
+.float-bar .btn-apply { background: #27ae60; color: white; }
+.float-bar .btn-apply:active { background: #219a52; }
+.float-bar .btn-clear { background: rgba(255,255,255,0.15); color: white; margin-right: 8px; }
+
+/* Bottom sheet */
+.sheet-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.4); z-index: 200; }
+.sheet-overlay.show { display: block; }
+.sheet { position: fixed; bottom: 0; left: 0; right: 0; background: white; border-radius: 16px 16px 0 0; z-index: 201; transform: translateY(100%); transition: transform 0.25s ease-out; padding-bottom: env(safe-area-inset-bottom, 0); }
+.sheet-overlay.show .sheet { transform: translateY(0); }
+.sheet-handle { width: 36px; height: 4px; background: #ccc; border-radius: 2px; margin: 8px auto; }
+.sheet-title { text-align: center; font-size: 14px; font-weight: 700; padding: 4px 16px 10px; color: #333; border-bottom: 1px solid #eee; }
+.sheet-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; padding: 12px 16px; }
+.sheet-btn {
+  padding: 14px 8px; border: 2px solid transparent; border-radius: 10px; cursor: pointer;
+  font-size: 14px; font-weight: 700; text-align: center; transition: all 0.15s;
+}
+.sheet-btn:active { transform: scale(0.95); }
+.sheet-btn.selected { border-color: #333; box-shadow: 0 0 0 2px rgba(0,0,0,0.15); }
+
+.sheet-btn[data-status="empty"] { background: #f5f5f5; color: #666; }
+.sheet-btn[data-status="pregnant"] { background: #a8e6cf; color: #2d6a4f; }
+.sheet-btn[data-status="nursing"] { background: #74b9ff; color: white; }
+.sheet-btn[data-status="treating"] { background: #ffd93d; color: #6d4c20; }
+.sheet-btn[data-status="cull"] { background: #ff6b6b; color: white; }
+.sheet-btn[data-status="growing"] { background: #f8c291; color: #6d4c20; }
+.sheet-btn[data-status="wean-back"] { background: #a29bfe; color: white; }
+.sheet-btn[data-status="recur"] { background: #fd79a8; color: white; }
+.sheet-btn[data-status="not-estrus"] { background: #b2bec3; color: #444; }
+
+.sheet-cancel { display: block; width: calc(100% - 32px); margin: 4px 16px 12px; padding: 12px; background: #eee; border: none; border-radius: 10px; font-size: 14px; font-weight: 600; color: #666; cursor: pointer; text-align: center; }
+.sheet-cancel:active { background: #ddd; }
+
+/* Print */
+@media print {
+  .header-actions, .sheet-overlay, .float-bar { display: none !important; }
+  .header, .tabs { position: static; }
+  .pen-cell { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
+
+/* Desktop */
+@media (min-width: 768px) {
+  .pen-cell { width: 72px; height: 32px; font-size: 11px; }
+  .header h1 { font-size: 18px; }
+  .header { padding: 12px 20px; }
+  .tabs { top: 47px; }
+  .tab { font-size: 14px; padding: 12px 8px; }
+  .legend { padding: 8px 20px; gap: 10px; }
+  .legend-item { font-size: 12px; }
+  .stats-bar { padding: 8px 20px; font-size: 13px; }
+  .layout-container { padding: 16px; padding-bottom: 80px; }
+  .sheet-grid { max-width: 500px; margin: 0 auto; }
+  .sheet-cancel { max-width: 500px; margin: 4px auto 12px; }
+  .sheet { max-width: 560px; left: 50%; transform: translateX(-50%) translateY(100%); border-radius: 16px 16px 0 0; }
+  .sheet-overlay.show .sheet { transform: translateX(-50%) translateY(0); }
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>大田原農場 管理</h1>
+  <div class="header-actions">
+    <button id="multiBtn" onclick="toggleMultiMode()">一括選択</button>
+    <button onclick="exportData()">書出</button>
+    <button onclick="document.getElementById('importFile').click()">読込</button>
+    <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
+  </div>
+</div>
+
+<div class="tabs" id="tabs"></div>
+<div class="legend" id="legend"></div>
+<div class="stats-bar" id="statsBar"></div>
+<div class="layout-container" id="layoutContainer"></div>
+
+<!-- Floating bar for multi-select -->
+<div class="float-bar" id="floatBar">
+  <span class="count" id="floatCount">0件選択中</span>
+  <div>
+    <button class="btn-clear" onclick="clearSelection()">解除</button>
+    <button class="btn-apply" onclick="openSheetMulti()">変更</button>
+  </div>
+</div>
+
+<!-- Bottom sheet -->
+<div class="sheet-overlay" id="sheetOverlay" onclick="closeSheet()">
+  <div class="sheet" onclick="event.stopPropagation()">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title" id="sheetTitle">ステータス選択</div>
+    <div class="sheet-grid" id="sheetGrid"></div>
+    <button class="sheet-cancel" onclick="closeSheet()">閉じる</button>
+  </div>
+</div>
+
+<script>
+const FACILITIES = [
+  { id:'bunben3', name:'分娩舎3', columns:4, sections:[{rows:13},{rows:14},{rows:13}] },
+  { id:'bunben4', name:'分娩舎4', columns:4, sections:[{rows:13},{rows:14},{rows:13}] },
+  { id:'bunben5', name:'分娩舎5', columns:4, sections:[{rows:13},{rows:14},{rows:13}] },
+  { id:'stall3',  name:'ストール3', columns:6, sections:[{rows:35},{rows:35},{rows:34}] }
+];
+
+const STATUSES = [
+  { id:'empty',     label:'空',       color:'#f5f5f5' },
+  { id:'pregnant',  label:'妊娠',     color:'#a8e6cf' },
+  { id:'nursing',   label:'哺乳',     color:'#74b9ff' },
+  { id:'treating',  label:'治療',     color:'#ffd93d' },
+  { id:'cull',      label:'廃豚',     color:'#ff6b6b' },
+  { id:'growing',   label:'育成',     color:'#f8c291' },
+  { id:'wean-back', label:'離乳戻り', color:'#a29bfe' },
+  { id:'recur',     label:'再発',     color:'#fd79a8' },
+  { id:'not-estrus',label:'未発',     color:'#b2bec3' }
+];
+
+let penData = {};
+let currentFacility = 'bunben3';
+let multiMode = false;
+let selectedKeys = new Set();
+
+// Persistence
+function load() {
+  try { penData = JSON.parse(localStorage.getItem('otawara_pig_flow') || '{}'); } catch(e) { penData = {}; }
+}
+function save() { localStorage.setItem('otawara_pig_flow', JSON.stringify(penData)); }
+
+function exportData() {
+  const d = new Date();
+  const name = `pig_flow_${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}.json`;
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(penData, null, 2)], {type:'application/json'}));
+  a.download = name; a.click(); URL.revokeObjectURL(a.href);
+}
+function importData(e) {
+  const file = e.target.files[0]; if (!file) return;
+  const r = new FileReader();
+  r.onload = function(ev) {
+    try {
+      penData = JSON.parse(ev.target.result);
+      save(); renderLayout(); updateStats();
+      alert('読み込み完了');
+    } catch(err) { alert('読み込み失敗'); }
+  };
+  r.readAsText(file); e.target.value = '';
+}
+
+function pk(fid, s, c, r) { return `${fid}_${s}_${c}_${r}`; }
+
+// Multi-select mode
+function toggleMultiMode() {
+  multiMode = !multiMode;
+  const btn = document.getElementById('multiBtn');
+  btn.classList.toggle('mode-active', multiMode);
+  btn.textContent = multiMode ? '選択中...' : '一括選択';
+  if (!multiMode) clearSelection();
+  updateFloatBar();
+}
+
+function clearSelection() {
+  selectedKeys.clear();
+  document.querySelectorAll('.pen-cell.selected').forEach(el => el.classList.remove('selected'));
+  updateFloatBar();
+}
+
+function updateFloatBar() {
+  const bar = document.getElementById('floatBar');
+  if (multiMode && selectedKeys.size > 0) {
+    bar.classList.add('show');
+    document.getElementById('floatCount').textContent = `${selectedKeys.size}件選択中`;
+  } else {
+    bar.classList.remove('show');
+  }
+}
+
+// Cell tap handler
+function onCellTap(key) {
+  if (multiMode) {
+    const cell = document.querySelector(`.pen-cell[data-key="${key}"]`);
+    if (selectedKeys.has(key)) {
+      selectedKeys.delete(key);
+      cell.classList.remove('selected');
+    } else {
+      selectedKeys.add(key);
+      cell.classList.add('selected');
+    }
+    updateFloatBar();
+  } else {
+    openSheetSingle(key);
+  }
+}
+
+// Tabs
+function renderTabs() {
+  const el = document.getElementById('tabs');
+  el.innerHTML = '';
+  FACILITIES.forEach(f => {
+    const t = document.createElement('div');
+    t.className = 'tab' + (f.id === currentFacility ? ' active' : '');
+    t.textContent = f.name;
+    t.onclick = () => {
+      currentFacility = f.id;
+      clearSelection();
+      renderTabs(); renderLayout(); updateStats();
+    };
+    el.appendChild(t);
+  });
+}
+
+// Legend
+function renderLegend() {
+  document.getElementById('legend').innerHTML = STATUSES.map(s =>
+    `<div class="legend-item"><div class="legend-color" style="background:${s.color}"></div>${s.label}</div>`
+  ).join('');
+}
+
+// Layout
+function renderLayout() {
+  const container = document.getElementById('layoutContainer');
+  const fac = FACILITIES.find(f => f.id === currentFacility);
+  container.innerHTML = '';
+
+  const bld = document.createElement('div');
+  bld.className = 'building';
+
+  const lbl = document.createElement('div');
+  lbl.className = 'building-label';
+  lbl.textContent = fac.name;
+  bld.appendChild(lbl);
+
+  fac.sections.forEach((sec, sIdx) => {
+    if (sIdx > 0) {
+      const cor = document.createElement('div');
+      cor.className = 'corridor';
+      cor.innerHTML = '<span>通路</span>';
+      bld.appendChild(cor);
+    }
+    for (let r = 0; r < sec.rows; r++) {
+      const row = document.createElement('div');
+      row.className = 'pen-section';
+      for (let c = 0; c < fac.columns; c++) {
+        if (c === Math.floor(fac.columns / 2)) {
+          const g = document.createElement('div');
+          g.className = 'col-gap';
+          row.appendChild(g);
+        }
+        const key = pk(fac.id, sIdx, c, r);
+        const st = (penData[key] || {}).status || 'empty';
+        const cell = document.createElement('div');
+        cell.className = `pen-cell status-${st}`;
+        if (selectedKeys.has(key)) cell.classList.add('selected');
+        cell.dataset.key = key;
+        cell.onclick = () => onCellTap(key);
+        row.appendChild(cell);
+      }
+      bld.appendChild(row);
+    }
+  });
+
+  const ent = document.createElement('div');
+  ent.className = 'entrance';
+  ent.textContent = '入口';
+  bld.appendChild(ent);
+  container.appendChild(bld);
+}
+
+// Stats
+function updateStats() {
+  const fac = FACILITIES.find(f => f.id === currentFacility);
+  let total = 0;
+  fac.sections.forEach(s => total += s.rows * fac.columns);
+
+  const counts = {};
+  STATUSES.forEach(s => counts[s.id] = 0);
+  for (const [key, data] of Object.entries(penData)) {
+    if (key.startsWith(fac.id + '_') && data.status) {
+      counts[data.status] = (counts[data.status] || 0) + 1;
+    }
+  }
+  const usedCount = Object.keys(penData).filter(k => k.startsWith(fac.id + '_') && penData[k].status && penData[k].status !== 'empty').length;
+
+  let h = `<span class="stat-item">総:<strong>${total}</strong></span>`;
+  h += `<span class="stat-item">使用:<strong>${usedCount}</strong></span>`;
+  h += `<span class="stat-item">空:<strong>${total - usedCount}</strong></span>`;
+  h += `<span class="stat-item">率:<strong>${total > 0 ? Math.round(usedCount/total*100) : 0}%</strong></span>`;
+  STATUSES.forEach(s => {
+    if (s.id !== 'empty' && counts[s.id] > 0)
+      h += `<span class="stat-item">${s.label}:<strong>${counts[s.id]}</strong></span>`;
+  });
+  document.getElementById('statsBar').innerHTML = h;
+}
+
+// Bottom sheet - single cell
+function openSheetSingle(key) {
+  const fac = FACILITIES.find(f => f.id === currentFacility);
+  const parts = key.split('_');
+  const s = parseInt(parts[1]), c = parseInt(parts[2]), r = parseInt(parts[3]);
+  const currentStatus = (penData[key] || {}).status || 'empty';
+  document.getElementById('sheetTitle').textContent = `${fac.name}  ${s+1}区 ${c+1}列 ${r+1}番`;
+  buildSheetGrid(currentStatus, (statusId) => {
+    applyStatus([key], statusId);
+    closeSheet();
+  });
+  document.getElementById('sheetOverlay').classList.add('show');
+}
+
+// Bottom sheet - multi cells
+function openSheetMulti() {
+  document.getElementById('sheetTitle').textContent = `${selectedKeys.size}件を一括変更`;
+  buildSheetGrid(null, (statusId) => {
+    applyStatus([...selectedKeys], statusId);
+    clearSelection();
+    if (multiMode) toggleMultiMode();
+    closeSheet();
+  });
+  document.getElementById('sheetOverlay').classList.add('show');
+}
+
+function buildSheetGrid(currentStatus, onSelect) {
+  const grid = document.getElementById('sheetGrid');
+  grid.innerHTML = '';
+  STATUSES.forEach(st => {
+    const btn = document.createElement('div');
+    btn.className = 'sheet-btn' + (st.id === currentStatus ? ' selected' : '');
+    btn.dataset.status = st.id;
+    btn.textContent = st.label;
+    btn.onclick = () => onSelect(st.id);
+    grid.appendChild(btn);
+  });
+}
+
+function applyStatus(keys, statusId) {
+  keys.forEach(key => {
+    if (statusId === 'empty') {
+      delete penData[key];
+    } else {
+      penData[key] = { status: statusId };
+    }
+    const cell = document.querySelector(`.pen-cell[data-key="${key}"]`);
+    if (cell) {
+      cell.className = `pen-cell status-${statusId}`;
+    }
+  });
+  save();
+  updateStats();
+}
+
+function closeSheet() {
+  document.getElementById('sheetOverlay').classList.remove('show');
+}
+
+// Init
+load();
+renderTabs();
+renderLegend();
+renderLayout();
+updateStats();
+</script>
+</body>
+</html>
