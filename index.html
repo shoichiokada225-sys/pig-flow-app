@@ -1,0 +1,1743 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ピッグフロー工程盤 | Weekly System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Old+Mincho:wght@700;900&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#F5EFE2;
+  --paper2:#EFE7D5;
+  --ink:#22303A;
+  --ink-soft:#5B6772;
+  --line:#D9CFB8;
+  --line-strong:#B9AC8E;
+  --mating:#C56A2B;   /* 柿 交配舎 */
+  --mating-bg:#F8E5D2;
+  --gest:#3F7D5C;     /* 松葉 妊娠舎 */
+  --gest-bg:#DFEAE0;
+  --farrow:#B8495F;   /* 紅 分娩舎 */
+  --farrow-bg:#F5DDE1;
+  --wash:#7A8CA0;     /* 灰青 洗浄 */
+  --wash-bg:#E3E8ED;
+  --nursery:#B08A00;  /* 山吹 離乳舎 */
+  --nursery-bg:#F5ECCF;
+  --finisher:#4A6FA5; /* 藍 肥育舎 */
+  --finisher-bg:#E0E8F2;
+  --alert:#B3261E;
+  --seal:#C0392B;
+  --radius:10px;
+  --mono:'IBM Plex Mono',monospace;
+  --serif:'Zen Old Mincho',serif;
+  --sans:'Zen Kaku Gothic New',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  font-family:var(--sans);
+  color:var(--ink);
+  background-color:var(--paper);
+  background-image:
+    linear-gradient(rgba(185,172,142,.14) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(185,172,142,.14) 1px, transparent 1px),
+    linear-gradient(rgba(185,172,142,.28) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(185,172,142,.28) 1px, transparent 1px);
+  background-size:14px 14px,14px 14px,70px 70px,70px 70px;
+  min-height:100vh;
+  padding-bottom:80px;
+}
+.wrap{max-width:1320px;margin:0 auto;padding:0 16px}
+
+/* ── ヘッダー ── */
+header{
+  border-bottom:3px double var(--line-strong);
+  background:linear-gradient(180deg, rgba(245,239,226,.6), rgba(245,239,226,.95));
+  backdrop-filter:blur(2px);
+  position:sticky;top:0;z-index:50;
+}
+.head-inner{display:flex;align-items:center;gap:14px;padding:12px 0;flex-wrap:wrap}
+.seal{
+  width:46px;height:46px;flex:0 0 46px;
+  background:var(--seal);color:#fff;
+  font-family:var(--serif);font-weight:900;font-size:26px;
+  display:flex;align-items:center;justify-content:center;
+  border-radius:8px;
+  box-shadow:2px 2px 0 rgba(34,48,58,.25);
+  transform:rotate(-3deg);
+}
+.title-block h1{font-family:var(--serif);font-weight:900;font-size:22px;letter-spacing:.06em;line-height:1.1}
+.title-block .en{font-family:var(--mono);font-size:10px;letter-spacing:.32em;color:var(--ink-soft);text-transform:uppercase;margin-top:2px}
+.head-spacer{flex:1}
+.week-nav{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.week-nav button{
+  font-family:var(--sans);font-weight:700;font-size:13px;
+  border:1.5px solid var(--ink);background:#fff;color:var(--ink);
+  border-radius:8px;padding:7px 10px;cursor:pointer;
+  box-shadow:2px 2px 0 rgba(34,48,58,.18);
+  transition:transform .08s;
+}
+.week-nav button:active{transform:translate(2px,2px);box-shadow:none}
+.week-display{
+  font-family:var(--mono);font-weight:700;font-size:15px;
+  background:var(--ink);color:var(--paper);
+  padding:7px 14px;border-radius:8px;min-width:225px;text-align:center;
+}
+.week-display small{display:block;font-size:10px;font-weight:500;opacity:.75;letter-spacing:.1em}
+.btn-ghost{
+  border:1.5px dashed var(--ink-soft) !important;background:transparent !important;
+  color:var(--ink-soft) !important;box-shadow:none !important;
+}
+
+/* ── KPI ── */
+.kpi-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:18px 0}
+.kpi{
+  background:#fff;border:1.5px solid var(--line-strong);border-radius:var(--radius);
+  padding:10px 14px;position:relative;overflow:hidden;
+}
+.kpi::before{content:'';position:absolute;left:0;top:0;bottom:0;width:5px;background:var(--kc,var(--ink))}
+.kpi .lbl{font-size:11px;color:var(--ink-soft);font-weight:500;letter-spacing:.05em}
+.kpi .val{font-family:var(--mono);font-weight:700;font-size:21px;line-height:1.25}
+.kpi .val small{font-size:12px;font-weight:500;color:var(--ink-soft)}
+
+/* ── 日別ストリップ ── */
+.daystrip-card{
+  background:#fff;border:1.5px solid var(--line-strong);border-radius:var(--radius);
+  padding:12px 14px;margin-bottom:22px;
+}
+.daystrip-card h2{font-family:var(--serif);font-size:15px;font-weight:700;letter-spacing:.08em;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.daystrip-card h2::before{content:'';width:10px;height:10px;background:var(--seal);border-radius:2px;transform:rotate(45deg)}
+.daystrip-card h2 small{font-family:var(--sans);font-weight:500;font-size:11px;color:var(--ink-soft);letter-spacing:0}
+.daystrip{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+@media(max-width:860px){.daystrip{grid-template-columns:repeat(4,1fr)}}
+@media(max-width:560px){.daystrip{grid-template-columns:repeat(2,1fr)}}
+.dcell{
+  border:1.5px solid var(--line);border-radius:8px;overflow:hidden;cursor:pointer;
+  background:#fff;min-height:86px;display:flex;flex-direction:column;
+  transition:box-shadow .1s;
+}
+.dcell:hover{box-shadow:0 3px 8px rgba(34,48,58,.15)}
+.dcell .dhead{
+  font-family:var(--mono);font-weight:700;font-size:11.5px;
+  padding:4px 8px;background:var(--paper2);color:var(--ink);
+  display:flex;justify-content:space-between;align-items:center;
+  border-bottom:1px solid var(--line);
+}
+.dcell.sel{border-color:var(--ink);border-width:2px}
+.dcell.sel .dhead{background:var(--ink);color:var(--paper)}
+.dcell .dhead .dow-sat{color:#4A6FA5}
+.dcell .dhead .dow-sun{color:var(--seal)}
+.dcell.sel .dhead .dow-sat,.dcell.sel .dhead .dow-sun{color:inherit;opacity:.9}
+.devs{padding:6px;display:flex;flex-direction:column;gap:4px}
+.dev{
+  display:flex;align-items:center;gap:5px;font-size:10.5px;font-weight:500;line-height:1.3;
+}
+.dev i{width:9px;height:9px;border-radius:2px;flex:0 0 9px}
+.dev b{font-family:var(--mono);font-weight:700}
+.dev.move{font-weight:700}
+.dev .arr{color:var(--ink-soft);font-size:9px}
+
+/* ── 豚舎レイアウト ── */
+.barns{display:grid;grid-template-columns:minmax(200px,5fr) minmax(380px,13fr) minmax(230px,6fr);gap:16px;align-items:start}
+@media(max-width:1080px){.barns{grid-template-columns:1fr 1fr}.barn.b-gest{grid-column:1/-1;order:3}}
+@media(max-width:640px){.barns{grid-template-columns:1fr}.barn.b-gest{order:0}}
+.barn{
+  background:#fff;border:2px solid var(--ink);border-radius:14px;overflow:hidden;
+  box-shadow:4px 4px 0 rgba(34,48,58,.12);
+}
+.barn-head{
+  display:flex;align-items:baseline;gap:10px;padding:10px 14px;
+  color:#fff;
+}
+.b-mating .barn-head{background:var(--mating)}
+.b-gest .barn-head{background:var(--gest)}
+.b-farrow .barn-head{background:var(--farrow)}
+.b-nursery .barn-head{background:var(--nursery)}
+.b-finisher .barn-head{background:var(--finisher)}
+.barn-head h2{font-family:var(--serif);font-size:18px;font-weight:900;letter-spacing:.15em}
+.barn-head .cap{font-family:var(--mono);font-size:12px;font-weight:600;opacity:.9;margin-left:auto}
+.barn-head .sub{font-size:11px;opacity:.85}
+.rooms{display:grid;gap:8px;padding:12px}
+.b-mating .rooms{grid-template-columns:1fr}
+.b-gest .rooms{grid-template-columns:repeat(3,1fr)}
+@media(max-width:640px){.b-gest .rooms{grid-template-columns:repeat(2,1fr)}}
+.b-farrow .rooms{grid-template-columns:1fr}
+
+.room{
+  border:1.5px solid var(--line-strong);border-radius:9px;
+  padding:8px 10px 8px 14px;position:relative;min-height:64px;
+  cursor:pointer;transition:transform .1s, box-shadow .1s;
+  background:var(--stage-bg,#fff);
+}
+.room::before{
+  content:'';position:absolute;left:0;top:0;bottom:0;width:7px;
+  background:var(--lot,transparent);border-radius:8px 0 0 8px;
+}
+.room:hover{transform:translateY(-2px);box-shadow:0 4px 10px rgba(34,48,58,.15)}
+.room.empty{
+  border-style:dashed;background:transparent;cursor:default;
+  display:flex;align-items:center;justify-content:center;
+  color:var(--ink-soft);font-size:12px;gap:6px;padding:8px 10px;
+}
+.room.empty::before{display:none}
+.room.empty:hover{transform:none;box-shadow:none}
+.room .rno{
+  position:absolute;top:-1px;right:-1px;
+  font-family:var(--mono);font-size:10px;font-weight:600;
+  background:var(--ink);color:var(--paper);
+  border-radius:0 8px 0 8px;padding:2px 8px;opacity:.85;
+}
+.room.empty .rno{background:transparent;color:var(--ink-soft);border:1px dashed var(--line-strong)}
+.room-top{display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap}
+.lotno{
+  font-family:var(--mono);font-weight:700;font-size:14px;letter-spacing:.02em;
+  background:var(--lot,var(--ink));color:#fff;border-radius:5px;padding:1px 7px;
+}
+.heads{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--ink-soft)}
+.chip{
+  font-size:10.5px;font-weight:700;border-radius:4px;padding:2px 7px;
+  color:#fff;background:var(--stage,var(--ink));letter-spacing:.04em;white-space:nowrap;
+}
+.room-detail{font-size:11.5px;color:var(--ink-soft);line-height:1.45}
+.room-detail .mv{font-weight:700;color:var(--ink)}
+.stay{
+  margin-top:6px;height:5px;border-radius:3px;background:rgba(34,48,58,.12);overflow:hidden;
+}
+.stay i{display:block;height:100%;background:var(--stage,var(--ink));border-radius:3px}
+
+/* ── 離乳舎・肥育舎（収容能力ビュー） ── */
+.grow{display:grid;gap:16px;margin-top:16px}
+.cohort-legend{display:flex;flex-wrap:wrap;gap:6px;padding:10px 12px 0}
+.cohort-legend .co{
+  display:inline-flex;align-items:center;gap:5px;
+  font-family:var(--mono);font-size:11px;font-weight:600;
+  border:1px solid var(--line);border-radius:99px;padding:2px 9px;background:var(--paper2);
+}
+.cohort-legend .co i{width:10px;height:10px;border-radius:3px;display:inline-block}
+.grow-rooms{display:grid;gap:8px;padding:12px}
+.b-nursery .grow-rooms{grid-template-columns:repeat(5,1fr)}
+.b-finisher .grow-rooms{grid-template-columns:repeat(6,1fr)}
+@media(max-width:820px){
+  .b-nursery .grow-rooms{grid-template-columns:repeat(2,1fr)}
+  .b-finisher .grow-rooms{grid-template-columns:repeat(3,1fr)}
+}
+.grow-room{border:1.5px solid var(--line-strong);border-radius:8px;padding:6px 8px;background:#fff}
+.grow-room .gr-label{
+  display:flex;justify-content:space-between;align-items:baseline;
+  font-family:var(--mono);font-size:10px;font-weight:600;color:var(--ink-soft);margin-bottom:4px;
+}
+.grow-room .gr-label b{font-size:10.5px;color:var(--ink)}
+.grow-room .bar{
+  display:flex;height:26px;border-radius:5px;overflow:hidden;
+  background:repeating-linear-gradient(45deg,var(--paper2),var(--paper2) 5px,#fff 5px,#fff 10px);
+  border:1px solid var(--line);
+}
+.grow-room .seg{
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--mono);font-size:10px;font-weight:700;color:rgba(255,255,255,.95);
+  overflow:hidden;white-space:nowrap;min-width:0;
+}
+.grow-room .seg.rest{color:var(--ink-soft);background:transparent !important;font-weight:600}
+.grow-room.mixed{outline:2px dashed var(--alert);outline-offset:1px}
+.grow-note{padding:0 14px 12px;font-size:11.5px;color:var(--ink-soft);line-height:1.6}
+.grow-note b{color:var(--alert)}
+
+/* ── 農場レイアウトマップ ── */
+.map-card{
+  background:#fff;border:2px solid var(--ink);border-radius:14px;
+  box-shadow:4px 4px 0 rgba(34,48,58,.12);overflow:hidden;margin-bottom:22px;
+}
+.map-head{display:flex;align-items:baseline;gap:12px;padding:12px 16px;border-bottom:2px solid var(--line);flex-wrap:wrap}
+.map-head h2{font-family:var(--serif);font-size:17px;font-weight:900;letter-spacing:.1em}
+.map-head .map-note{font-size:11.5px;color:var(--ink-soft);margin-left:auto}
+.map-scroll{overflow-x:auto}
+.map{
+  position:relative;min-width:980px;display:grid;
+  grid-template-columns:repeat(12,1fr);
+  grid-template-rows:auto 46px auto;
+  gap:10px;padding:18px;
+  background:
+    repeating-linear-gradient(0deg, transparent 0 23px, rgba(185,172,142,.16) 23px 24px),
+    repeating-linear-gradient(90deg, transparent 0 23px, rgba(185,172,142,.16) 23px 24px);
+}
+.map-arrows{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:5}
+.map-arrows path.mv{fill:none;stroke-width:3;stroke-dasharray:8 6;animation:flowdash 1s linear infinite}
+@keyframes flowdash{to{stroke-dashoffset:-28}}
+.mv-label{
+  position:absolute;z-index:6;transform:translate(-50%,-50%);
+  font-family:var(--mono);font-size:10.5px;font-weight:700;color:#fff;
+  padding:2px 9px;border-radius:99px;white-space:nowrap;box-shadow:1px 2px 4px rgba(0,0,0,.3);
+  pointer-events:none;
+}
+.mbuild{
+  border:2px solid var(--ink);border-radius:10px;background:#fff;
+  overflow:hidden;position:relative;z-index:1;
+}
+.mb-name{
+  font-family:var(--serif);font-weight:900;font-size:13px;letter-spacing:.18em;
+  color:#fff;padding:4px 10px;display:flex;justify-content:space-between;align-items:center;
+}
+.mb-name small{font-family:var(--mono);font-size:9.5px;letter-spacing:0;font-weight:600;opacity:.9}
+.mb-mating{grid-column:1/4;grid-row:1}
+.mb-gest{grid-column:4/10;grid-row:1}
+.mb-farrow{grid-column:10/13;grid-row:1}
+.mb-nursery{grid-column:1/5;grid-row:3}
+.mb-finisher{grid-column:5/12;grid-row:3}
+.mb-mating .mb-name{background:var(--mating)}
+.mb-gest .mb-name{background:var(--gest)}
+.mb-farrow .mb-name{background:var(--farrow)}
+.mb-nursery .mb-name{background:var(--nursery)}
+.mb-finisher .mb-name{background:var(--finisher)}
+.mb-rooms{display:grid;gap:5px;padding:8px}
+.mcell{
+  min-height:46px;border:1.5px solid var(--line-strong);border-radius:6px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
+  font-family:var(--mono);font-weight:700;font-size:12px;color:#fff;cursor:pointer;
+  position:relative;line-height:1.15;overflow:hidden;
+}
+.mcell small{font-size:9px;font-weight:600;opacity:.92}
+.mcell .rn{position:absolute;top:1px;left:4px;font-size:8px;font-weight:600;opacity:.75}
+.mcell.empty{
+  background:transparent;border-style:dashed;color:var(--ink-soft);cursor:default;
+  font-size:10px;font-weight:500;
+}
+.mcell.empty .rn{color:var(--ink-soft)}
+.mcell.washing{
+  background:repeating-linear-gradient(45deg,var(--wash-bg) 0 6px,#fff 6px 12px);
+  color:var(--wash);border-color:var(--wash);cursor:default;font-size:10.5px;
+}
+.mcell.washing .rn{color:var(--wash)}
+.mcell.gcell{cursor:default}
+.mcell.gcell .rn{color:var(--ink-soft)}
+.mcell .cnt{
+  background:rgba(255,255,255,.9);color:var(--ink);border-radius:4px;
+  padding:0 5px;font-size:10px;font-weight:700;
+}
+.mcell.gmixed{outline:2px dashed var(--alert);outline-offset:1px}
+.road{
+  grid-column:1/13;grid-row:2;border-radius:6px;position:relative;z-index:0;
+  background:#E7DFCC;
+  display:flex;align-items:center;justify-content:center;
+}
+.road::before{content:'';position:absolute;left:10px;right:10px;top:50%;border-top:2px dashed rgba(91,103,114,.4)}
+.road span{position:relative;font-family:var(--mono);font-size:9px;letter-spacing:.4em;color:var(--ink-soft);background:#E7DFCC;padding:0 10px}
+.mship{
+  grid-column:12/13;grid-row:3;align-self:stretch;justify-self:stretch;
+  border:2px dashed var(--ink);border-radius:10px;background:var(--paper2);
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--serif);font-weight:900;font-size:13px;letter-spacing:.25em;
+  min-height:70px;writing-mode:vertical-rl;z-index:1;
+}
+.mb-tou{display:flex;gap:8px;padding:8px}
+.mb-tou .tou{flex:1;border:1.5px solid var(--line);border-radius:8px;padding:5px}
+.mb-tou .tou .tlabel{font-family:var(--mono);font-size:9px;color:var(--ink-soft);font-weight:600;margin-bottom:4px;text-align:center}
+.mb-tou .tou .mb-rooms{padding:0}
+
+/* ── 警告 ── */
+.banner{
+  background:#FBEAE9;border:2px solid var(--alert);color:var(--alert);
+  border-radius:var(--radius);padding:10px 16px;margin-bottom:16px;
+  font-weight:700;font-size:14px;display:none;
+}
+.banner.show{display:block}
+
+/* ── ガント ── */
+.gantt-card{
+  margin-top:26px;background:#fff;border:2px solid var(--ink);border-radius:14px;
+  box-shadow:4px 4px 0 rgba(34,48,58,.12);overflow:hidden;
+}
+.gantt-head{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:2px solid var(--line);flex-wrap:wrap}
+.gantt-head h2{font-family:var(--serif);font-size:17px;font-weight:900;letter-spacing:.1em}
+.legend{display:flex;gap:12px;margin-left:auto;flex-wrap:wrap}
+.legend span{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:500}
+.legend i{width:14px;height:14px;border-radius:3px;display:inline-block}
+.gantt-scroll{overflow-x:auto;padding:10px 14px 16px}
+table.gantt{border-collapse:collapse;font-family:var(--mono)}
+.gantt th,.gantt td{border:1px solid var(--line);text-align:center;font-size:10.5px;padding:0}
+.gantt th{background:var(--paper2);font-weight:600;color:var(--ink-soft);padding:4px 3px;min-width:34px;white-space:nowrap}
+.gantt th.cur,.gantt td.cur{border-left:2px solid var(--ink);border-right:2px solid var(--ink)}
+.gantt th.cur{background:var(--ink);color:var(--paper)}
+.gantt td{height:22px;min-width:34px}
+.gantt .rowh{
+  position:sticky;left:0;background:#fff;font-weight:700;font-size:11px;
+  padding:2px 6px;text-align:left;min-width:58px;z-index:2;border-right:2px solid var(--ink);
+}
+.gantt .rowh .dot{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:4px;vertical-align:-1px}
+.gantt td.c-mating{background:var(--mating)}
+.gantt td.c-gest{background:var(--gest)}
+.gantt td.c-farrow{background:var(--farrow)}
+.gantt td.c-mating,.gantt td.c-gest,.gantt td.c-farrow{color:rgba(255,255,255,.85)}
+.gantt td span{font-size:9px;font-weight:600}
+
+/* ── 設定 ── */
+.settings-card{
+  margin-top:26px;background:#fff;border:2px solid var(--ink);border-radius:14px;
+  box-shadow:4px 4px 0 rgba(34,48,58,.12);
+}
+.settings-card h2{
+  font-family:var(--serif);font-size:17px;font-weight:900;letter-spacing:.1em;
+  padding:12px 16px;border-bottom:2px solid var(--line);
+}
+.settings-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;padding:16px}
+.field label{display:block;font-size:12px;font-weight:700;color:var(--ink-soft);margin-bottom:5px;letter-spacing:.03em}
+.field input,.field select{
+  width:100%;font-family:var(--mono);font-size:15px;font-weight:600;
+  border:1.5px solid var(--line-strong);border-radius:8px;padding:8px 10px;
+  background:var(--paper);color:var(--ink);
+}
+.field input:focus,.field select:focus{outline:2px solid var(--mating);border-color:var(--mating)}
+.field .hint{font-size:10.5px;color:var(--ink-soft);margin-top:4px;line-height:1.4}
+.settings-foot{padding:0 16px 16px;font-size:12px;color:var(--ink-soft);line-height:1.7}
+.settings-foot b{font-family:var(--mono)}
+
+/* ── モーダル ── */
+.overlay{
+  position:fixed;inset:0;background:rgba(34,48,58,.45);z-index:100;
+  display:none;align-items:center;justify-content:center;padding:16px;
+}
+.overlay.show{display:flex}
+.modal{
+  background:var(--paper);border:2px solid var(--ink);border-radius:14px;
+  width:min(420px,100%);box-shadow:6px 6px 0 rgba(0,0,0,.25);
+}
+.modal-head{
+  display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:2px solid var(--line);
+}
+.modal-head .lotno{font-size:20px;padding:2px 10px}
+.modal-head .chip{font-size:12px}
+.modal-body{padding:18px;display:grid;gap:14px}
+.modal-foot{display:flex;gap:10px;padding:0 18px 18px}
+.modal-foot button{
+  flex:1;font-family:var(--sans);font-weight:700;font-size:14px;border-radius:8px;
+  padding:10px;cursor:pointer;border:1.5px solid var(--ink);
+}
+.btn-save{background:var(--ink);color:var(--paper)}
+.btn-cancel{background:#fff;color:var(--ink)}
+.modal .info{font-size:12.5px;color:var(--ink-soft);line-height:1.7;background:var(--paper2);border-radius:8px;padding:10px 12px}
+.modal .info b{font-family:var(--mono)}
+
+footer{
+  margin-top:40px;text-align:center;font-size:11px;color:var(--ink-soft);
+  font-family:var(--mono);letter-spacing:.15em;
+}
+
+/* ── ストール格子（分娩舎などの内訳レイアウト） ── */
+.stalls{display:grid;gap:2px;margin-top:6px;justify-content:start}
+.stalls i{width:9px;height:9px;border:1px solid var(--line-strong);border-radius:2px;background:var(--sc,#fff)}
+.mcell .stalls{margin-top:3px;gap:1px;justify-content:center}
+.mcell .stalls i{width:4px;height:4px;border-width:.5px}
+
+/* ── 生産ラインビュー ── */
+.line-card{
+  background:#fff;border:2px solid var(--ink);border-radius:14px;
+  box-shadow:4px 4px 0 rgba(34,48,58,.12);overflow:hidden;margin-bottom:22px;
+}
+.line{display:flex;align-items:stretch;padding:16px;overflow-x:auto}
+.lstation{
+  flex:1;min-width:122px;border:2px solid var(--line-strong);border-radius:10px;
+  padding:8px 10px 9px;position:relative;background:#fff;
+}
+.lstation h3{font-family:var(--serif);font-size:12.5px;font-weight:900;letter-spacing:.1em;display:flex;gap:6px;align-items:center;margin-bottom:2px}
+.lstation h3 i{width:10px;height:10px;border-radius:3px;flex:0 0 10px}
+.lstation .wip{font-family:var(--mono);font-weight:700;font-size:19px;line-height:1.2}
+.lstation .wip small{font-size:10px;color:var(--ink-soft);font-weight:500}
+.lstation .lbar{height:6px;background:rgba(34,48,58,.1);border-radius:3px;margin:6px 0 4px;overflow:hidden}
+.lstation .lbar i{display:block;height:100%;border-radius:3px}
+.lstation .sub{font-size:10.5px;color:var(--ink-soft);line-height:1.45}
+.lstation.bn{border-color:var(--alert)}
+.lstation.bn::after{
+  content:'ボトルネック';position:absolute;top:-9px;right:8px;
+  background:var(--alert);color:#fff;font-size:9px;font-weight:700;
+  padding:1px 8px;border-radius:99px;letter-spacing:.05em;
+}
+.lchev{display:flex;align-items:center;padding:0 5px;color:var(--ink-soft);font-size:15px;flex:0 0 auto}
+.io-btn{
+  font-family:var(--sans);font-weight:700;font-size:13px;
+  border:1.5px solid var(--ink);background:#fff;color:var(--ink);
+  border-radius:8px;padding:8px 14px;cursor:pointer;
+  box-shadow:2px 2px 0 rgba(34,48,58,.18);
+}
+.io-btn:active{transform:translate(2px,2px);box-shadow:none}
+
+/* ── ロット追跡・再生・今日マーカー ── */
+.dim{opacity:.25;filter:saturate(.35)}
+.followed{outline:3px solid var(--ink) !important;outline-offset:1.5px;z-index:2}
+.follow-chip{
+  display:inline-flex;align-items:center;gap:6px;
+  font-family:var(--mono);font-size:12px;font-weight:700;color:#fff;
+  border-radius:99px;padding:3px 6px 3px 12px;box-shadow:1px 2px 4px rgba(0,0,0,.2);
+}
+.follow-chip button{
+  border:none;background:rgba(255,255,255,.25);color:#fff;border-radius:99px;
+  width:20px;height:20px;font-size:11px;cursor:pointer;line-height:1;
+}
+.btn-play.playing{background:var(--seal) !important;color:#fff !important;border-color:var(--seal) !important}
+.dcell.today .dhead{box-shadow:inset 0 -3px 0 var(--seal)}
+.gantt th[data-w]{cursor:pointer}
+.gantt th[data-w]:hover{background:var(--line)}
+.gantt .rowh[data-g]{cursor:pointer}
+.gantt .rowh[data-g]:hover{background:var(--paper2)}
+.gantt tr.dim td,.gantt tr.dim .rowh{opacity:.3}
+.dev.dim{opacity:.3}
+
+/* ── 印刷 / PDF出力 ── */
+@media print{
+  @page{size:A4 landscape;margin:8mm}
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  body{background:#fff !important;padding:0}
+  header,.settings-card,.overlay,.week-nav,.kpi-strip .kpi::before{box-shadow:none}
+  header{position:static;border-bottom:2px solid var(--line-strong)}
+  .week-nav,.settings-card,#banner{display:none !important}
+  .map-card,.daystrip-card,.line-card,.barns .barn,.grow .barn,.gantt-card{box-shadow:none;break-inside:avoid}
+  .barns{grid-template-columns:1fr 1fr 1fr}
+  .map{min-width:0}
+  main.wrap{max-width:100%;padding:0}
+  .print-only{display:block !important}
+  footer{margin-top:12px}
+}
+.print-only{display:none}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap head-inner">
+    <div class="seal">流</div>
+    <div class="title-block">
+      <h1>ピッグフロー工程盤</h1>
+      <div class="en">Pig Flow Planning Board — Weekly System</div>
+    </div>
+    <div class="head-spacer"></div>
+    <div class="week-nav">
+      <button id="prevWk">◀◀ 週</button>
+      <button id="prevD">◀ 日</button>
+      <div class="week-display" id="weekDisplay"></div>
+      <button id="nextD">日 ▶</button>
+      <button id="nextWk">週 ▶▶</button>
+      <button id="todayW" class="btn-ghost">今日</button>
+      <button id="playBtn" class="btn-play" title="日送りを自動再生してフローを眺める">▶ 再生</button>
+      <button id="printBtn" title="レイアウト・工程表をPDF/印刷">🖨 PDF</button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="banner" id="banner"></div>
+
+  <section class="map-card" style="margin-top:18px">
+    <div class="map-head">
+      <h2>農場レイアウト（仮）</h2>
+      <span id="followInfo"></span>
+      <span class="map-note">部屋の色＝ロット固有色 ／ 移動がある日は矢印（月・火・水・金）／ 部屋クリックで詳細・追跡</span>
+    </div>
+    <div class="map-scroll"><div class="map" id="map"></div></div>
+  </section>
+
+  <div class="kpi-strip" id="kpiStrip"></div>
+
+  <section class="line-card">
+    <div class="map-head">
+      <h2>生産ライン（工程ビュー）</h2>
+      <span class="map-note">WIP＝各工程の在庫頭数 ／ バー＝区画稼働率 ／ 最も詰まった工程に<b>ボトルネック</b>表示</span>
+    </div>
+    <div class="line" id="lineStrip"></div>
+  </section>
+
+  <section class="daystrip-card">
+    <h2>今週の動き（日別）<small>クリックでその日へジャンプ ／ 月:交配舎→妊娠舎(35日) 火:妊娠舎→分娩舎(77日) 水:離乳(28日)</small></h2>
+    <div class="daystrip" id="daystrip"></div>
+  </section>
+
+  <section class="barns" id="barns"></section>
+
+  <section class="grow" id="grow"></section>
+
+  <section class="gantt-card">
+    <div class="gantt-head">
+      <h2>ロット別 工程ガント（週）</h2>
+      <div class="legend">
+        <span><i style="background:var(--mating)"></i>交配舎</span>
+        <span><i style="background:var(--gest)"></i>妊娠舎</span>
+        <span><i style="background:var(--farrow)"></i>分娩舎</span>
+      </div>
+    </div>
+    <div class="gantt-scroll" id="ganttScroll"></div>
+  </section>
+
+  <section class="settings-card">
+    <h2>農場設定</h2>
+    <div class="settings-grid">
+      <div class="field">
+        <label>飼養方式（グループシステム）</label>
+        <select id="setSystem">
+          <option value="weekly">ウィークリー（毎週）</option>
+          <option value="2-10">ツーテン 2-10（2週まとめ）</option>
+          <option value="3-7">スリーセブン 3-7（3週まとめ）</option>
+          <option value="4-5">フォーファイブ 4-5（4週まとめ）</option>
+        </select>
+        <div class="hint">選ぶとグループ数・区画・哺乳週の推奨値が入ります（頭数・メモはリセット）</div>
+      </div>
+      <div class="field">
+        <label>母豚規模（頭）</label>
+        <input type="number" id="setSows" min="20" step="10">
+        <div class="hint">1ロット頭数 = 母豚数 ÷ グループ数（各ロット個別調整可）</div>
+      </div>
+      <div class="field">
+        <label>哺乳期間</label>
+        <select id="setLact">
+          <option value="3">3週（サイクル140日）</option>
+          <option value="4">4週（サイクル147日）</option>
+        </select>
+        <div class="hint">妊娠114日固定。方式により自動設定（ウィークリーのみ選択可）</div>
+      </div>
+      <div class="field">
+        <label>分娩率（%）</label>
+        <input type="number" id="setRate" min="50" max="100" step="1">
+        <div class="hint">交配頭数 × 分娩率 = 分娩腹数の見込み</div>
+      </div>
+      <div class="field">
+        <label>交配舎スペース（週分）</label>
+        <input type="number" id="setMatingSp" min="1" max="12">
+        <div class="hint">水曜離乳で入舎 → 約35日在舎 → 月曜に妊娠舎へ</div>
+      </div>
+      <div class="field">
+        <label>妊娠舎スペース（週分）</label>
+        <input type="number" id="setGestSp" min="1" max="30">
+        <div class="hint">約77日在舎 → 火曜に分娩舎へ。余剰は候補豚・予備</div>
+      </div>
+      <div class="field">
+        <label>分娩舎スペース（週分）</label>
+        <input type="number" id="setFarrowSp" min="1" max="12">
+        <div class="hint">約28日在舎（分娩前〜哺乳）→ 水曜離乳。洗浄も占有</div>
+      </div>
+      <div class="field">
+        <label>基準週の月曜日</label>
+        <input type="date" id="setAnchor">
+        <div class="hint">ロット1が水曜に離乳し交配舎へ入る週の月曜日</div>
+      </div>
+      <div class="field">
+        <label>平均離乳頭数（頭/腹）</label>
+        <input type="number" id="setWeanAvg" min="1" max="18" step="0.1">
+        <div class="hint">分娩腹数 × 平均離乳頭数 = 週間離乳頭数（子豚コホート）</div>
+      </div>
+      <div class="field">
+        <label>離乳舎 部屋数 / 収容頭数</label>
+        <input type="number" id="setNurRooms" min="1" max="40" style="width:48%;display:inline-block">
+        <input type="number" id="setNurCap" min="10" step="10" style="width:48%;display:inline-block">
+        <div class="hint">例）300頭×10部屋＝3,000頭</div>
+      </div>
+      <div class="field">
+        <label>離乳舎 飼養週数 / 空舎週</label>
+        <input type="number" id="setNurWeeks" min="1" max="15" style="width:48%;display:inline-block">
+        <input type="number" id="setNurIdle" min="0" max="6" style="width:48%;display:inline-block">
+        <div class="hint">収容週＋空舎週（洗浄・消毒・乾燥）。空舎優先度は離乳舎＞肥育舎</div>
+      </div>
+      <div class="field">
+        <label>肥育舎 部屋数 / 収容頭数</label>
+        <input type="number" id="setFinRooms" min="1" max="60" style="width:48%;display:inline-block">
+        <input type="number" id="setFinCap" min="10" step="10" style="width:48%;display:inline-block">
+        <div class="hint">例）450頭×18部屋（3棟×6部屋）＝8,100頭</div>
+      </div>
+      <div class="field">
+        <label>肥育舎 飼養週数 / 空舎週</label>
+        <input type="number" id="setFinWeeks" min="1" max="25" style="width:48%;display:inline-block">
+        <input type="number" id="setFinIdle" min="0" max="6" style="width:48%;display:inline-block">
+        <div class="hint">収容週＋空舎週。15週なら77日齢導入→182日齢までに出荷</div>
+      </div>
+      <div class="field">
+        <label>肥育舎 外部導入（頭/週）</label>
+        <input type="number" id="setExtIn" min="0" step="10">
+        <div class="hint">他農場からの導入分を各週コホートに加算（頭/週）</div>
+      </div>
+      <div class="field" style="grid-column:1/-1;border-top:1.5px dashed var(--line-strong);padding-top:12px">
+        <label>レイアウト内訳（マップの見た目・編集可）</label>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:4px">
+          <div><div class="hint" style="margin:0 0 3px">交配舎 表示列数</div><input type="number" id="setMatingCols" min="1" max="12"></div>
+          <div><div class="hint" style="margin:0 0 3px">妊娠舎 表示列数</div><input type="number" id="setGestCols" min="1" max="12"></div>
+          <div><div class="hint" style="margin:0 0 3px">分娩舎 表示列数</div><input type="number" id="setFarrowCols" min="1" max="12"></div>
+          <div><div class="hint" style="margin:0 0 3px">離乳舎 表示列数</div><input type="number" id="setNurCols" min="1" max="12"></div>
+          <div><div class="hint" style="margin:0 0 3px">分娩舎 ストール数/区画</div><input type="number" id="setFarrowSrow" min="0" max="40"></div>
+          <div><div class="hint" style="margin:0 0 3px">分娩舎 列数（ストール）</div><input type="number" id="setFarrowScol" min="0" max="6"></div>
+        </div>
+        <div class="hint" style="margin-top:6px">例）分娩舎は 14ストール×2列＝28床/区画。0にすると格子は非表示（群飼）</div>
+      </div>
+      <div class="field" style="grid-column:1/-1;border-top:1.5px dashed var(--line-strong);padding-top:12px">
+        <label>レイアウトの読み込み / 書き出し（Excel・CSV）</label>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:4px">
+          <button type="button" id="importBtn" class="io-btn">📥 Excel / CSV を読み込む</button>
+          <button type="button" id="exportBtn" class="io-btn">📤 CSV を書き出す（テンプレ兼用）</button>
+          <input type="file" id="importFile" accept=".xlsx,.xls,.csv" style="display:none">
+        </div>
+        <div class="hint">書き出したCSVをExcelで開き、区画数・収容頭数などを編集して読み込むと反映されます。
+        Excelの .xlsx 保存もそのまま読めます（Shift-JISのCSVも自動判別）。行の順序は自由、空行OK。</div>
+      </div>
+    </div>
+    <div class="settings-foot">
+      移動ルール（日単位）: <b>月曜</b>=交配舎に約35日居たロットが妊娠舎へ ／ <b>火曜</b>=妊娠舎に約77日居たロットが分娩舎へ ／
+      <b>水曜</b>=分娩舎に約28日居たロットが離乳し交配舎へ。母豚の生理サイクルは方式共通で、
+      グループ間隔（毎週／2・3・4週まとめ）だけが変わります。区画数が在舎に足りないと超過警告、
+      離乳舎・肥育舎は空舎週を設けると <b>AIAO（洗浄・消毒・乾燥）</b> が可視化されます。
+      設定・頭数は自動保存されます（この端末のブラウザ内）。
+      <button id="resetBtn" style="margin-left:12px;font-family:var(--sans);font-weight:700;font-size:12px;border:1.5px dashed var(--alert);color:var(--alert);background:transparent;border-radius:8px;padding:5px 12px;cursor:pointer">例データに戻す（初期化）</button>
+    </div>
+  </section>
+
+  <footer>PIG FLOW BOARD v5.0</footer>
+</main>
+
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <div class="modal-head">
+      <span class="lotno" id="mLot"></span>
+      <span class="chip" id="mChip"></span>
+    </div>
+    <div class="modal-body">
+      <div class="field">
+        <label>交配頭数（頭）</label>
+        <input type="number" id="mHeads" min="0" step="1">
+      </div>
+      <div class="field">
+        <label>メモ（再発・廃用予定など）</label>
+        <input type="text" id="mMemo" maxlength="60" placeholder="例）再発2頭 / 廃用候補3頭">
+      </div>
+      <div class="info" id="mInfo"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-cancel" id="mCancel">閉じる</button>
+      <button class="btn-cancel" id="mFollow">🎯 追跡</button>
+      <button class="btn-save" id="mSave">保存</button>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+/* ============================================================
+   ピッグフロー工程盤 v3 — 日単位モデル
+
+   ◆ サイクル（哺乳3週=140日 / 4週=147日）
+     D = ロットごとの「水曜離乳・交配舎入舎」を 0 とした経過日数
+       D  0..32   交配舎（約35日: 離乳→交配→妊娠鑑定）
+       D 33..110  妊娠舎（約77日）
+       D 111..C-1 分娩舎（約28日: 分娩前→分娩→哺乳→離乳）
+   ◆ 移動曜日（ユーザー指定の運用）
+       月曜: 交配舎→妊娠舎（D=33 ちょうど月曜になる）
+       火曜: 妊娠舎→分娩舎（D=111 ちょうど火曜になる）
+       水曜: 離乳＝分娩舎→交配舎（D=0/C ちょうど水曜になる）
+   ◆ 部屋割り: 入舎週 mod 部屋数 でローテーション（AIAO）
+   ◆ 子豚: 水曜離乳の週次コホート → 離乳舎 → 肥育舎（頭数収容ビュー）
+============================================================ */
+
+const LS_KEY = 'pigflow-board-v5';
+const B1 = 33;    // 交配舎→妊娠舎 境界（月曜移動）
+const B2 = 111;   // 妊娠舎→分娩舎 境界（火曜移動）
+const FARROW_D = 119;  // 分娩目安日（交配D≒5 + 114日）
+const DOW = ['月', '火', '水', '木', '金', '土', '日'];
+
+/* 飼養方式プリセット
+   gi = グループ間隔（週）／ lact = 哺乳週（weeklyはnull=可変）
+   グループ数 G = サイクル週(20 or 21) ÷ gi
+   スペースは「区画（棟）数」＝仮レイアウト。idle=空舎週（洗浄・消毒・乾燥） */
+const SYSTEMS = {
+  weekly: { label: 'ウィークリー（毎週・1-20/21）', gi: 1, lact: null,
+    sp: { mating: 5, gest: 18, farrow: 6 },
+    nursery: { rooms: 10, cap: 300, weeks: 8, idle: 1 },
+    finisher: { rooms: 18, cap: 450, weeks: 15, idle: 1, extIn: 0 } },
+  '2-10': { label: 'ツーテン（2週まとめ・2-10）', gi: 2, lact: 3,
+    sp: { mating: 3, gest: 9, farrow: 4 },
+    nursery: { rooms: 6, cap: 600, weeks: 8, idle: 2 },
+    finisher: { rooms: 10, cap: 900, weeks: 15, idle: 1, extIn: 0 } },
+  '3-7': { label: 'スリーセブン（3週まとめ・3-7）', gi: 3, lact: 4,
+    sp: { mating: 2, gest: 6, farrow: 3 },
+    nursery: { rooms: 4, cap: 700, weeks: 7, idle: 2 },
+    finisher: { rooms: 7, cap: 700, weeks: 17, idle: 1, extIn: 0 } },
+  '4-5': { label: 'フォーファイブ（4週まとめ・4-5）', gi: 4, lact: 3,
+    sp: { mating: 2, gest: 5, farrow: 3 },
+    nursery: { rooms: 3, cap: 900, weeks: 8, idle: 2 },
+    finisher: { rooms: 6, cap: 1300, weeks: 15, idle: 1, extIn: 0 } },
+};
+
+/* 例データ（初回のデフォルト・ウィークリー母豚500頭／20ロットで頭数を少しばらつかせる） */
+const EX_HEADS = { 1: 23, 2: 26, 3: 24, 4: 25, 5: 27, 6: 22, 7: 25, 8: 28, 9: 24, 10: 26,
+  11: 25, 12: 24, 13: 26, 14: 23, 15: 25, 16: 27, 17: 24, 18: 25, 19: 26, 20: 25 };
+const EX_MEMOS = { 3: '再発2頭 前グループ戻り', 7: '廃用候補3頭（産次7）', 12: '候補豚4頭 導入', 18: '分娩前 要観察' };
+
+const defaults = () => ({
+  system: 'weekly',
+  sows: 500,
+  lact: 3,
+  rate: 88,
+  sp: { mating: 5, gest: 18, farrow: 6 },
+  weanAvg: 10.5,
+  nursery: { rooms: 10, cap: 300, weeks: 8, idle: 1 },
+  finisher: { rooms: 18, cap: 450, weeks: 15, idle: 1, extIn: 0 },
+  /* レイアウトの内訳例（編集可）: cols=表示列数, srow×scol=1区画内のストール配置
+     交配舎5区画 / 妊娠舎18区画(3列) / 分娩舎6区画・各14ストール×2列 */
+  layout: {
+    mating: { cols: 5, srow: 0, scol: 0 },
+    gest: { cols: 3, srow: 0, scol: 0 },
+    farrow: { cols: 3, srow: 14, scol: 2 },
+    nursery: { cols: 5, srow: 0, scol: 0 },
+    finisher: { cols: 6, srow: 0, scol: 0 },
+  },
+  anchor: mondayOf(new Date()).toISOString().slice(0, 10),
+  day: 2, // 初期表示は基準週の水曜（ロット1の離乳日）
+  follow: null, // 追跡中のロット番号（null=なし）
+  lotHeads: { ...EX_HEADS },
+  lotMemos: { ...EX_MEMOS },
+});
+
+let state = load();
+
+function load() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return defaults();
+    const d = defaults();
+    const s = Object.assign(d, JSON.parse(raw));
+    s.sp = Object.assign(d.sp, s.sp);
+    s.nursery = Object.assign(d.nursery, s.nursery);
+    s.finisher = Object.assign(d.finisher, s.finisher);
+    s.layout = Object.assign(d.layout, s.layout || {});
+    for (const k of ['mating', 'gest', 'farrow', 'nursery', 'finisher'])
+      s.layout[k] = Object.assign(d.layout[k], s.layout[k] || {});
+    return s;
+  } catch (e) { return defaults(); }
+}
+function save() { localStorage.setItem(LS_KEY, JSON.stringify(state)); }
+
+/* ---------- 基礎計算 ---------- */
+function mod(n, m) { return ((n % m) + m) % m; } // 関数宣言（巻き上げ）: defaults()/load()が先に実行されるため
+const SYS = () => SYSTEMS[state.system] || SYSTEMS.weekly;
+const gi = () => SYS().gi;                       // グループ間隔（週）
+const g7 = () => gi() * 7;                       // グループ間隔（日）
+const cycleWeeks = () => (state.lact === 4 ? 21 : 20);
+const G = () => Math.round(cycleWeeks() / gi()); // グループ数
+const C = () => cycleWeeks() * 7;               // サイクル日数 140/147
+const defaultHeads = () => Math.round(state.sows / G());
+const headsOf = g => state.lotHeads[g] ?? defaultHeads();
+const littersOf = g => Math.round(headsOf(g) * state.rate / 100);
+const pad = n => String(n).padStart(2, '0');
+
+/* ロット色（識別用・ゴールデンアングルで20色分散） */
+const lotColor = g => 'hsl(' + Math.round(mod((g - 1) * 137.508, 360)) + ',52%,44%)';
+
+function mondayOf(d) {
+  const x = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  x.setDate(x.getDate() - mod(x.getDay() - 1, 7));
+  x.setHours(12);
+  return x;
+}
+function dateOf(dayIdx) {
+  const a = new Date(state.anchor + 'T12:00:00');
+  a.setDate(a.getDate() + dayIdx);
+  return a;
+}
+function fmtMD(d) { return (d.getMonth() + 1) + '/' + d.getDate(); }
+function fmtFull(dayIdx) {
+  const d = dateOf(dayIdx);
+  return d.getFullYear() + '年 ' + fmtMD(d) + '（' + DOW[mod(dayIdx, 7)] + '）';
+}
+function todayIdx() {
+  const a = new Date(state.anchor + 'T12:00:00');
+  const t = new Date(); t.setHours(12, 0, 0, 0);
+  return Math.round((t - a) / 864e5);
+}
+
+/* ロット g の経過日数 D（D=0 が水曜離乳・交配舎入舎。グループは gi 週ずつ位相をずらす） */
+const dOf = (g, day) => mod(day - 2 - (g - 1) * g7(), C());
+function lotsAt(day) {
+  return Array.from({ length: G() }, (_, i) => ({ g: i + 1, D: dOf(i + 1, day) }));
+}
+function barnOf(D) {
+  if (D < B1) return 'mating';
+  if (D < B2) return 'gest';
+  return 'farrow';
+}
+
+/* ステージ（日単位） */
+function stageOf(D, g) {
+  const c = C();
+  const gd = D - 4;            // 妊娠日数目安（交配≒D4）
+  const pig = D - FARROW_D;    // 仔豚日齢目安
+  if (D < 3)   return { chip: '離乳直後', color: 'var(--mating)', bg: 'var(--mating-bg)', detail: '水曜離乳・発情待ち（在舎' + (D + 1) + '日目）' };
+  if (D < 6)   return { chip: '交配適期', color: 'var(--mating)', bg: 'var(--mating-bg)', detail: '発情確認・交配（離乳後' + D + '日）' };
+  if (D < 30)  return { chip: '鑑定待ち', color: 'var(--mating)', bg: 'var(--mating-bg)', detail: '妊娠 ' + gd + '日目安・再発チェック' };
+  if (D < B1)  return { chip: '妊娠鑑定', color: 'var(--mating)', bg: 'var(--mating-bg)', detail: '交配後約' + gd + '日 → <span class="mv">月曜 妊娠舎へ</span>' };
+  if (D < 104) return { chip: '妊娠期', color: 'var(--gest)', bg: 'var(--gest-bg)', detail: '妊娠 ' + gd + '日' };
+  if (D < B2)  return { chip: '分娩前', color: 'var(--gest)', bg: 'var(--gest-bg)', detail: '妊娠 ' + gd + '日 → <span class="mv">火曜 分娩舎へ</span>（分娩約' + (FARROW_D - D) + '日前）' };
+  if (D < 118) return { chip: '分娩準備', color: 'var(--farrow)', bg: 'var(--farrow-bg)', detail: '妊娠 ' + gd + '日・分娩予定 ' + fmtMD(dateOf(state.day - D + FARROW_D)) + '頃' };
+  if (D < 122) return { chip: '分娩集中', color: 'var(--farrow)', bg: 'var(--farrow-bg)', detail: '分娩予定日前後（交配後114日）・' + littersOf(g) + '腹見込み' };
+  if (D < c - 7) return { chip: '哺乳中', color: 'var(--farrow)', bg: 'var(--farrow-bg)', detail: '仔豚 約' + pig + '日齢' };
+  return { chip: '離乳前', color: 'var(--farrow)', bg: 'var(--farrow-bg)', detail: '仔豚 約' + pig + '日齢 → <span class="mv">水曜 離乳</span>' };
+}
+
+function stayInfo(D) {
+  if (D < B1) return { day: D + 1, len: B1, label: '交配舎' };
+  if (D < B2) return { day: D - B1 + 1, len: B2 - B1, label: '妊娠舎' };
+  return { day: D - B2 + 1, len: C() - B2, label: '分娩舎' };
+}
+
+/* 次の移動 */
+function nextMove(D) {
+  if (D < B1) return { at: B1 - D, to: '妊娠舎', dow: '月' };
+  if (D < B2) return { at: B2 - D, to: '分娩舎', dow: '火' };
+  return { at: C() - D, to: '交配舎（離乳）', dow: '水' };
+}
+
+/* 部屋割り: 入舎グループ順 mod 部屋数（在舎中は固定・AIAOローテーション） */
+function roomOf(barn, D, day) {
+  const start = barn === 'mating' ? 0 : barn === 'gest' ? B1 : B2;
+  const rooms = state.sp[barn];
+  const entryDay = day - (D - start);
+  return mod(Math.floor(entryDay / g7()), rooms);
+}
+/* 洗浄柵: 直近に離乳したロット（D∈[0,gi週)）が居た分娩柵 */
+function washInfo(day) {
+  const lot = lotsAt(day).find(l => l.D < g7());
+  if (!lot) return null;
+  const entryDay = day - lot.D - (C() - B2); // そのロットの分娩舎入舎日
+  return { g: lot.g, room: mod(Math.floor(entryDay / g7()), state.sp.farrow) };
+}
+
+/* 離乳週 wwk（gi週ごと）に離乳するグループ番号 */
+function weanGroupOf(wwk) { return mod(Math.round(wwk / gi()), G()) + 1; }
+
+/* 離乳舎・肥育舎のAIAO部屋割り（1群1部屋・空舎期間つき）
+   base=入舎までの通算週（離乳=0, 肥育=離乳舎週数）。各室 {occ|null, wash|null} */
+function growRooms(kind) {
+  const conf = state[kind];
+  const nurW = state.nursery.weeks;
+  const base = kind === 'nursery' ? 0 : nurW;
+  const week = curWeek();
+  const rooms = Array.from({ length: conf.rooms }, () => ({ occ: null, wash: null }));
+  const span = base + conf.weeks + conf.idle + gi();
+  const lastWean = week - mod(week, gi());
+  for (let a = 0; a * gi() <= span + gi(); a++) {
+    const wwk = lastWean - a * gi();
+    const g = weanGroupOf(wwk);
+    const weeksIn = week - wwk;
+    const local = weeksIn - base;
+    if (local < 0) continue;
+    const r = mod(Math.round(wwk / gi()), conf.rooms);
+    const heads = Math.round(littersOf(g) * state.weanAvg) + (kind === 'finisher' ? state.finisher.extIn : 0);
+    const age = state.lact * 7 + weeksIn * 7;
+    if (local < conf.weeks) {
+      if (!rooms[r].occ) rooms[r].occ = { g, heads, age, local, weeksIn };
+    } else if (local < conf.weeks + conf.idle) {
+      if (!rooms[r].occ && !rooms[r].wash) rooms[r].wash = { g, age };
+    }
+  }
+  return rooms;
+}
+/* 在舎に必要な群数（部屋数と比較してパンク判定） */
+const growNeed = kind => Math.ceil(state[kind].weeks / gi());
+
+/* ============================================================
+   描画
+============================================================ */
+const $ = s => document.querySelector(s);
+const esc = s => s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const curWeek = () => Math.floor(state.day / 7);
+
+/* 追跡モード: 対象外セルは .dim、対象は .followed */
+const fcls = g => state.follow == null ? '' : (g === state.follow ? ' followed' : ' dim');
+const dimAll = () => state.follow == null ? '' : ' dim';
+function setFollow(g) {
+  state.follow = (state.follow === g ? null : g);
+  render();
+}
+
+function render() {
+  renderHead();
+  renderKPI();
+  renderMap();
+  renderLine();
+  renderDaystrip();
+  renderBarns();
+  renderGrow();
+  renderGantt();
+  renderFollowChip();
+  save();
+}
+
+/* ---------- 生産ライン（工程ビュー） ---------- */
+function renderLine() {
+  const lots = lotsAt(state.day);
+  const occ = { mating: 0, gest: 0, farrow: 0 }, wip = { mating: 0, gest: 0, farrow: 0 };
+  lots.forEach(l => { const b = barnOf(l.D); occ[b]++; wip[b] += headsOf(l.g); });
+  const washN = washInfo(state.day) ? 1 : 0;
+  const nurR = growRooms('nursery'), finR = growRooms('finisher');
+  const nOcc = nurR.filter(r => r.occ).length, nWash = nurR.filter(r => r.wash).length;
+  const fOcc = finR.filter(r => r.occ).length, fWash = finR.filter(r => r.wash).length;
+  const nH = nurR.reduce((s, r) => s + (r.occ ? r.occ.heads : 0), 0);
+  const fH = finR.reduce((s, r) => s + (r.occ ? r.occ.heads : 0), 0);
+  const total = lots.reduce((s, l) => s + headsOf(l.g), 0);
+
+  /* スループット（タクト＝グループ間隔） */
+  const wkMate = total / cycleWeeks();
+  const wkFarrow = wkMate * state.rate / 100;
+  const wkWean = wkFarrow * state.weanAvg;
+  const wkShip = wkWean + state.finisher.extIn / gi();
+  const annual = wkShip * 52;
+  const perSow = total ? annual / total : 0;
+
+  const st = [
+    { n: '交配舎', c: 'var(--mating)', wip: wip.mating, unit: '頭', u: occ.mating / state.sp.mating,
+      sub: occ.mating + '/' + state.sp.mating + '区画 ・ IN 週' + Math.round(wkMate) + '頭' },
+    { n: '妊娠舎', c: 'var(--gest)', wip: wip.gest, unit: '頭', u: occ.gest / state.sp.gest,
+      sub: occ.gest + '/' + state.sp.gest + '区画 ・ 在舎77日' },
+    { n: '分娩舎', c: 'var(--farrow)', wip: wip.farrow, unit: '頭(母)', u: (occ.farrow + washN) / state.sp.farrow,
+      sub: (occ.farrow + washN) + '/' + state.sp.farrow + '区画 ・ 週' + Math.round(wkFarrow) + '腹' },
+    { n: '離乳舎', c: 'var(--nursery)', wip: nH, unit: '頭', u: (nOcc + nWash) / state.nursery.rooms,
+      sub: nOcc + '在舎+' + nWash + '空舎/' + state.nursery.rooms + ' ・ IN 週' + Math.round(wkWean) + '頭' },
+    { n: '肥育舎', c: 'var(--finisher)', wip: fH, unit: '頭', u: (fOcc + fWash) / state.finisher.rooms,
+      sub: fOcc + '在舎+' + fWash + '空舎/' + state.finisher.rooms + ' ・ 在舎' + state.finisher.weeks + '週' },
+    { n: '出荷', c: 'var(--seal)', wip: Math.round(wkShip), unit: '頭/週', u: null,
+      sub: '年' + Math.round(annual).toLocaleString() + '頭 ・ ' + perSow.toFixed(1) + '頭/母豚' },
+  ];
+  let bnIdx = -1, bnU = 0;
+  st.forEach((s, i) => { if (s.u != null && s.u >= bnU) { bnU = s.u; bnIdx = i; } });
+
+  $('#lineStrip').innerHTML = st.map((s, i) => {
+    const pct = s.u == null ? null : Math.min(100, Math.round(s.u * 100));
+    const bar = pct == null ? '' :
+      '<div class="lbar"><i style="width:' + pct + '%;background:' + (s.u > 1 ? 'var(--alert)' : s.c) + '"></i></div>';
+    return '<div class="lstation' + (i === bnIdx && bnU >= 0.7 ? ' bn' : '') + '">' +
+      '<h3><i style="background:' + s.c + '"></i>' + s.n + (pct != null ? '<span style="margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--ink-soft)">' + pct + '%</span>' : '') + '</h3>' +
+      '<div class="wip">' + s.wip.toLocaleString() + '<small> ' + s.unit + '</small></div>' +
+      bar + '<div class="sub">' + s.sub + '</div></div>' +
+      (i < st.length - 1 ? '<div class="lchev">▶</div>' : '');
+  }).join('');
+}
+
+function renderFollowChip() {
+  const el = $('#followInfo');
+  if (!el) return;
+  if (state.follow == null) { el.innerHTML = ''; return; }
+  el.innerHTML = '<span class="follow-chip" style="background:' + lotColor(state.follow) + '">🎯 L' +
+    pad(state.follow) + ' を追跡中<button id="unfollow" title="追跡解除">✕</button></span>';
+  $('#unfollow').addEventListener('click', () => { state.follow = null; render(); });
+}
+
+/* ---------- 農場レイアウトマップ ---------- */
+function renderMap() {
+  const day = state.day, lots = lotsAt(day);
+
+  const bcells = barn => {
+    const byRoom = {};
+    lots.filter(l => barnOf(l.D) === barn).forEach(l => { byRoom[roomOf(barn, l.D, day)] = l; });
+    const wi = barn === 'farrow' ? washInfo(day) : null;
+    const hasStall = (state.layout[barn].srow || 0) > 0;
+    const tall = hasStall ? ' tall' : '';
+    let html = '';
+    for (let r = 0; r < state.sp[barn]; r++) {
+      const l = byRoom[r];
+      if (l) {
+        const st = stageOf(l.D, l.g), si = stayInfo(l.D);
+        html += '<div class="mcell' + tall + fcls(l.g) + '" data-g="' + l.g + '" style="background:' + lotColor(l.g) + '" ' +
+          'title="L' + pad(l.g) + '：' + st.chip + '・在舎' + si.day + '/' + si.len + '日・' + headsOf(l.g) + '頭">' +
+          '<span class="rn">' + (r + 1) + '</span>L' + pad(l.g) + '<small>' + headsOf(l.g) + '頭</small>' + stallGrid(barn, 'rgba(255,255,255,.85)') + '</div>';
+      } else if (wi && wi.room === r) {
+        html += '<div class="mcell washing' + tall + fcls(wi.g) + '" title="L' + pad(wi.g) + ' 離乳跡・洗浄乾燥中"><span class="rn">' + (r + 1) + '</span>洗浄' + stallGrid(barn, 'var(--wash-bg)') + '</div>';
+      } else {
+        html += '<div class="mcell empty' + tall + dimAll() + '"><span class="rn">' + (r + 1) + '</span>空' + stallGrid(barn, '#fff') + '</div>';
+      }
+    }
+    return html;
+  };
+
+  const gcells = (kind, conf) => {
+    const rooms = growRooms(kind);
+    return rooms.map((r, i) => {
+      if (r.occ) {
+        const o = r.occ, pct = Math.min(100, o.heads / conf.cap * 100).toFixed(0);
+        const grad = 'linear-gradient(to top,' + lotColor(o.g) + ' 0% ' + pct + '%,transparent ' + pct + '%)';
+        return '<div class="mcell gcell' + fcls(o.g) + '" style="background:' + grad + '" title="L' + pad(o.g) + ' ' + o.age + '日齢 ' + o.heads + '頭（' + o.heads + '/' + conf.cap + '）">' +
+          '<span class="rn">' + (i + 1) + '</span><span class="cnt">' + o.heads + '</span></div>';
+      }
+      if (r.wash) return '<div class="mcell washing' + fcls(r.wash.g) + '" title="L' + pad(r.wash.g) + ' 跡・空舎（洗浄消毒乾燥）"><span class="rn">' + (i + 1) + '</span>空舎</div>';
+      return '<div class="mcell empty gcell' + dimAll() + '"><span class="rn">' + (i + 1) + '</span>空</div>';
+    });
+  };
+
+  const cols = n => 'grid-template-columns:repeat(' + Math.max(1, Math.ceil(n)) + ',1fr)';
+  const finCells = gcells('finisher', state.finisher);
+  const perTou = Math.min(state.layout.finisher.cols || 6, finCells.length) || finCells.length;
+  let finHtml = '';
+  for (let t = 0; t < finCells.length; t += perTou) {
+    finHtml += '<div class="tou"><div class="tlabel">棟' + (Math.floor(t / perTou) + 1) + '</div>' +
+      '<div class="mb-rooms" style="' + cols(Math.min(perTou, finCells.length - t) / 2) + '">' + finCells.slice(t, t + perTou).join('') + '</div></div>';
+  }
+
+  $('#map').innerHTML =
+    '<svg class="map-arrows" id="mapArrows"></svg>' +
+    '<div class="mbuild mb-mating" id="bld-mating"><div class="mb-name">交配舎<small>' + state.sp.mating + '区画</small></div>' +
+    '<div class="mb-rooms" style="' + cols(state.layout.mating.cols) + '">' + bcells('mating') + '</div></div>' +
+    '<div class="mbuild mb-gest" id="bld-gest"><div class="mb-name">妊娠舎<small>' + state.sp.gest + '区画</small></div>' +
+    '<div class="mb-rooms" style="' + cols(state.layout.gest.cols) + '">' + bcells('gest') + '</div></div>' +
+    '<div class="mbuild mb-farrow" id="bld-farrow"><div class="mb-name">分娩舎<small>' + state.sp.farrow + '区画</small></div>' +
+    '<div class="mb-rooms" style="' + cols(state.layout.farrow.cols) + '">' + bcells('farrow') + '</div></div>' +
+    '<div class="road"><span>場内通路</span></div>' +
+    '<div class="mbuild mb-nursery" id="bld-nursery"><div class="mb-name">離乳舎<small>' + state.nursery.cap + '頭×' + state.nursery.rooms + '</small></div>' +
+    '<div class="mb-rooms" style="' + cols(state.layout.nursery.cols) + '">' + gcells('nursery', state.nursery).join('') + '</div></div>' +
+    '<div class="mbuild mb-finisher" id="bld-finisher"><div class="mb-name">肥育舎<small>' + state.finisher.cap + '頭×' + state.finisher.rooms + '</small></div>' +
+    '<div class="mb-tou">' + finHtml + '</div></div>' +
+    '<div class="mship" id="bld-ship">出荷</div>';
+
+  document.querySelectorAll('#map .mcell[data-g]').forEach(el =>
+    el.addEventListener('click', () => openModal(+el.dataset.g)));
+
+  drawMapArrows();
+}
+
+function drawMapArrows() {
+  const svg = document.getElementById('mapArrows');
+  const map = document.getElementById('map');
+  if (!svg || !map) return;
+  const mr = map.getBoundingClientRect();
+  const box = id => {
+    const el = document.getElementById(id);
+    if (!el) return null;
+    const r = el.getBoundingClientRect();
+    return { l: r.left - mr.left, t: r.top - mr.top, w: r.width, h: r.height };
+  };
+
+  const wd = mod(state.day, 7);
+  const w = curWeek(), wmod = mod(w, gi());
+  const lots = lotsAt(state.day);
+  const nw = state.nursery.weeks, fw = state.finisher.weeks;
+  let arrows = [];
+  if (wd === 0) {
+    const l = lots.find(x => x.D === B1);
+    if (l) arrows.push({ g: l.g, f: 'bld-mating', t: 'bld-gest', kind: 'h', color: lotColor(l.g), label: 'L' + pad(l.g) + ' 移動' });
+    if (wmod === mod(nw, gi())) {
+      const g = weanGroupOf(w - nw), heads = Math.round(littersOf(g) * state.weanAvg);
+      arrows.push({ g, f: 'bld-nursery', t: 'bld-finisher', kind: 'h', color: lotColor(g), label: heads + '頭 移動' });
+    }
+  }
+  if (wd === 1) {
+    const l = lots.find(x => x.D === B2);
+    if (l) arrows.push({ g: l.g, f: 'bld-gest', t: 'bld-farrow', kind: 'h', color: lotColor(l.g), label: 'L' + pad(l.g) + ' 移動' });
+  }
+  if (wd === 2) {
+    const l = lots.find(x => x.D === 0);
+    if (l) {
+      arrows.push({ g: l.g, f: 'bld-farrow', t: 'bld-mating', kind: 'return', color: lotColor(l.g), label: 'L' + pad(l.g) + ' 離乳→交配舎' });
+      arrows.push({ g: l.g, f: 'bld-farrow', t: 'bld-nursery', kind: 'down', color: lotColor(l.g), label: '仔豚 ' + Math.round(littersOf(l.g) * state.weanAvg) + '頭' });
+    }
+  }
+  if (wd === 4 && wmod === mod(nw + fw, gi())) {
+    const g = weanGroupOf(w - nw - fw), heads = Math.round(littersOf(g) * state.weanAvg) + state.finisher.extIn;
+    arrows.push({ g, f: 'bld-finisher', t: 'bld-ship', kind: 'h', color: lotColor(g), label: '出荷 ' + heads + '頭' });
+  }
+  if (state.follow != null) arrows = arrows.filter(a => a.g === state.follow);
+
+  let defs = '', paths = '', labels = '';
+  arrows.forEach((a, i) => {
+    const A = box(a.f), B = box(a.t);
+    if (!A || !B) return;
+    let d, mx, my;
+    if (a.kind === 'h') {
+      const x1 = A.l + A.w, y1 = A.t + A.h / 2, x2 = B.l, y2 = B.t + B.h / 2;
+      d = 'M' + x1 + ' ' + y1 + ' C' + (x1 + 30) + ' ' + y1 + ',' + (x2 - 30) + ' ' + y2 + ',' + (x2 - 4) + ' ' + y2;
+      mx = (x1 + x2) / 2; my = (y1 + y2) / 2 - 14;
+    } else if (a.kind === 'return') {
+      const x1 = A.l + A.w * 0.35, y1 = A.t + A.h, x2 = B.l + B.w / 2, y2 = B.t + B.h;
+      const dip = Math.max(y1, y2) + 34;
+      d = 'M' + x1 + ' ' + y1 + ' C' + x1 + ' ' + dip + ',' + x2 + ' ' + dip + ',' + x2 + ' ' + (y2 + 4);
+      mx = (x1 + x2) / 2; my = dip - 1;
+    } else { // down
+      const x1 = A.l + A.w * 0.7, y1 = A.t + A.h, x2 = B.l + B.w * 0.6, y2 = B.t;
+      d = 'M' + x1 + ' ' + y1 + ' C' + x1 + ' ' + (y1 + 60) + ',' + x2 + ' ' + (y2 - 60) + ',' + x2 + ' ' + (y2 - 4);
+      mx = (x1 + x2) / 2 + 30; my = (y1 + y2) / 2;
+    }
+    defs += '<marker id="ah' + i + '" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">' +
+      '<path d="M0 0 L8 4 L0 8 Z" fill="' + a.color + '"/></marker>';
+    paths += '<path class="mv" d="' + d + '" stroke="' + a.color + '" marker-end="url(#ah' + i + ')"/>';
+    labels += '<div class="mv-label" style="left:' + mx + 'px;top:' + my + 'px;background:' + a.color + '">' + a.label + '</div>';
+  });
+  svg.innerHTML = '<defs>' + defs + '</defs>' + paths;
+  document.querySelectorAll('#map .mv-label').forEach(el => el.remove());
+  map.insertAdjacentHTML('beforeend', labels);
+}
+window.addEventListener('resize', () => drawMapArrows());
+
+function renderHead() {
+  const rel = state.day - todayIdx();
+  const tag = rel === 0 ? '今日' : (rel > 0 ? rel + '日後' : (-rel) + '日前');
+  $('#weekDisplay').innerHTML =
+    fmtFull(state.day) + '<small>WEEK ' + (curWeek() >= 0 ? '+' : '') + curWeek() + ' ／ ' + tag + '</small>';
+}
+
+function renderKPI() {
+  const lots = lotsAt(state.day);
+  const occ = { mating: 0, gest: 0, farrow: 0 };
+  lots.forEach(l => occ[barnOf(l.D)]++);
+  const washN = washInfo(state.day) ? 1 : 0;
+  const total = lots.reduce((s, l) => s + headsOf(l.g), 0);
+
+  const nurRooms = growRooms('nursery'), finRooms = growRooms('finisher');
+  const nurHeads = nurRooms.reduce((s, r) => s + (r.occ ? r.occ.heads : 0), 0);
+  const finHeads = finRooms.reduce((s, r) => s + (r.occ ? r.occ.heads : 0), 0);
+  const nurUse = nurRooms.filter(r => r.occ).length, finUse = finRooms.filter(r => r.occ).length;
+
+  const kpis = [
+    { lbl: '母豚合計（' + G() + 'ロット）', val: total + '<small> 頭</small>', c: 'var(--ink)' },
+    { lbl: '交配舎 稼働', val: occ.mating + '<small> / ' + state.sp.mating + ' 区画</small>', c: 'var(--mating)' },
+    { lbl: '妊娠舎 稼働', val: occ.gest + '<small> / ' + state.sp.gest + ' 区画</small>', c: 'var(--gest)' },
+    { lbl: '分娩舎 稼働（洗浄含む）', val: (occ.farrow + washN) + '<small> / ' + state.sp.farrow + ' 区画</small>', c: 'var(--farrow)' },
+    { lbl: '離乳舎 在庫', val: nurHeads + '<small>頭 / ' + nurUse + '群</small>', c: 'var(--nursery)' },
+    { lbl: '肥育舎 在庫', val: finHeads + '<small>頭 / ' + finUse + '群</small>', c: 'var(--finisher)' },
+  ];
+  $('#kpiStrip').innerHTML = kpis.map(k =>
+    '<div class="kpi" style="--kc:' + k.c + '"><div class="lbl">' + k.lbl + '</div><div class="val">' + k.val + '</div></div>'
+  ).join('');
+
+  const over = [];
+  if (occ.mating > state.sp.mating) over.push('交配舎 ' + occ.mating + '/' + state.sp.mating + '区画');
+  if (occ.gest > state.sp.gest) over.push('妊娠舎 ' + occ.gest + '/' + state.sp.gest + '区画');
+  if (occ.farrow + washN > state.sp.farrow) over.push('分娩舎 ' + (occ.farrow + washN) + '/' + state.sp.farrow + '区画（洗浄含む）');
+  if (growNeed('nursery') > state.nursery.rooms) over.push('離乳舎 要' + growNeed('nursery') + '/' + state.nursery.rooms + '区画 → 肥育導入日齢の前倒しを検討');
+  if (growNeed('finisher') > state.finisher.rooms) over.push('肥育舎 要' + growNeed('finisher') + '/' + state.finisher.rooms + '区画 → 出荷日齢の前倒しを検討');
+  const b = $('#banner');
+  if (over.length) {
+    b.textContent = '⚠ 収容能力超過: ' + over.join(' ／ ');
+    b.classList.add('show');
+  } else b.classList.remove('show');
+}
+
+/* ---------- 日別ストリップ ---------- */
+function renderDaystrip() {
+  const w = curWeek();
+  const nw = state.nursery.weeks, fw = state.finisher.weeks;
+  const wmod = mod(w, gi());
+  let html = '';
+  for (let i = 0; i < 7; i++) {
+    const day = w * 7 + i;
+    const lots = lotsAt(day);
+    const evs = [];
+    lots.forEach(l => {
+      const col = lotColor(l.g), L = '<b>L' + pad(l.g) + '</b>', g = l.g;
+      if (i === 0 && l.D === B1) evs.push({ g, col, cls: 'move', txt: L + ' 交<span class="arr">▶</span>妊 移動（' + headsOf(l.g) + '頭・在舎' + B1 + '日）' });
+      if (i === 1 && l.D === B2) evs.push({ g, col, cls: 'move', txt: L + ' 妊<span class="arr">▶</span>分 移動（' + littersOf(l.g) + '腹見込み・在舎' + (B2 - B1) + '日）' });
+      if (i === 2 && l.D === 0) {
+        evs.push({ g, col, cls: 'move', txt: L + ' 離乳 分<span class="arr">▶</span>交（在舎' + (C() - B2) + '日）' });
+        evs.push({ g, col, cls: 'move', txt: '仔豚 約' + Math.round(littersOf(l.g) * state.weanAvg) + '頭 → 離乳舎へ' });
+      }
+      if (l.D >= 3 && l.D < 6) evs.push({ g, col, cls: '', txt: L + ' 交配（離乳後' + l.D + '日）' });
+      if (l.D >= 118 && l.D < 121) evs.push({ g, col, cls: '', txt: L + ' 分娩集中（' + littersOf(l.g) + '腹）' });
+      if (i === 3 && l.D >= 1 && l.D < g7()) evs.push({ g, col: 'var(--wash)', cls: '', txt: '分娩柵 洗浄（L' + pad(l.g) + '跡）' });
+    });
+    if (i === 0 && wmod === mod(nw, gi())) {
+      const g = weanGroupOf(w - nw), heads = Math.round(littersOf(g) * state.weanAvg);
+      evs.push({ g, col: lotColor(g), cls: 'move', txt: '<b>' + (state.lact * 7 + nw * 7) + '日齢</b> 離乳舎<span class="arr">▶</span>肥育舎（' + heads + '頭）' });
+    }
+    if (i === 4 && wmod === mod(nw + fw, gi())) {
+      const g = weanGroupOf(w - nw - fw), heads = Math.round(littersOf(g) * state.weanAvg) + state.finisher.extIn;
+      evs.push({ g, col: lotColor(g), cls: 'move', txt: '<b>出荷</b>（' + heads + '頭・〜' + (state.lact * 7 + (nw + fw) * 7) + '日齢）' });
+    }
+    const dowCls = i === 5 ? ' class="dow-sat"' : i === 6 ? ' class="dow-sun"' : '';
+    const today = day === todayIdx() ? ' today' : '';
+    html += '<div class="dcell' + (day === state.day ? ' sel' : '') + today + '" data-day="' + day + '">' +
+      '<div class="dhead"><span' + dowCls + '>' + DOW[i] + '</span><span>' + fmtMD(dateOf(day)) + '</span></div>' +
+      '<div class="devs">' +
+      (evs.length ? evs.map(e => '<span class="dev ' + e.cls + (e.g != null && state.follow != null && e.g !== state.follow ? ' dim' : '') + '"><i style="background:' + e.col + '"></i><span>' + e.txt + '</span></span>').join('') :
+        '<span class="dev" style="color:var(--ink-soft)">—</span>') +
+      '</div></div>';
+  }
+  $('#daystrip').innerHTML = html;
+  document.querySelectorAll('.dcell').forEach(el =>
+    el.addEventListener('click', () => { stopPlay(); state.day = +el.dataset.day; render(); }));
+}
+
+/* ---------- 繁殖3舎レイアウト ---------- */
+function roomCard(lot, barn) {
+  const st = stageOf(lot.D, lot.g);
+  const si = stayInfo(lot.D);
+  const nm = nextMove(lot.D);
+  const headsTxt = barn === 'farrow' && lot.D >= 118
+    ? littersOf(lot.g) + '腹 / ' + headsOf(lot.g) + '頭'
+    : headsOf(lot.g) + '頭';
+  const memo = state.lotMemos[lot.g] ? '<div class="room-detail">📝 ' + esc(state.lotMemos[lot.g]) + '</div>' : '';
+  const prog = Math.min(1, si.day / si.len);
+  return '<div class="room' + fcls(lot.g) + '" data-g="' + lot.g + '" style="--stage:' + st.color + ';--stage-bg:' + st.bg + ';--lot:' + lotColor(lot.g) + '">' +
+    '<span class="rno">' + roomLabel(barn) + '-' + (roomOf(barn, lot.D, state.day) + 1) + '</span>' +
+    '<div class="room-top"><span class="lotno">L' + pad(lot.g) + '</span>' +
+    '<span class="heads">' + headsTxt + '</span>' +
+    '<span class="chip">' + st.chip + '</span></div>' +
+    '<div class="room-detail">' + st.detail + '</div>' +
+    '<div class="room-detail">在舎 ' + si.day + '/' + si.len + '日 ・ ' + nm.at + '日後(' + nm.dow + ') ' + nm.to + '</div>' + memo +
+    '<div class="stay"><i style="width:' + Math.round(prog * 100) + '%"></i></div>' +
+    stallGrid(barn, lotColor(lot.g)) +
+    '</div>';
+}
+function roomLabel(b) { return b === 'mating' ? '交' : b === 'gest' ? '妊' : '分'; }
+/* 1区画内のストール格子（srow×scol）。横並びで省スペース表示。color指定で在舎を塗る */
+function stallGrid(barn, color) {
+  const L = state.layout[barn] || {};
+  const srow = L.srow || 0, scol = L.scol || 0, n = srow * scol;
+  if (!n) return '';
+  const cols = Math.max(srow, scol);
+  return '<div class="stalls" title="' + srow + 'ストール×' + scol + '列＝' + n + '床" ' +
+    'style="grid-template-columns:repeat(' + cols + ',auto);--sc:' + (color || '#fff') + '">' +
+    '<i></i>'.repeat(n) + '</div>';
+}
+
+function renderBarns() {
+  const lots = lotsAt(state.day);
+
+  const build = (barn, title, en, spaces, extra) => {
+    const occupants = lots.filter(l => barnOf(l.D) === barn);
+    const byRoom = {};
+    occupants.forEach(l => { byRoom[roomOf(barn, l.D, state.day)] = roomCard(l, barn); });
+    if (extra) extra(byRoom);
+    let cells = '';
+    for (let r = 0; r < spaces; r++) {
+      cells += byRoom[r] || '<div class="room empty"><span class="rno">' + roomLabel(barn) + '-' + (r + 1) + '</span>空き' +
+        (barn === 'gest' ? '（候補豚・予備）' : '') + stallGrid(barn, '#fff') + '</div>';
+    }
+    const cls = barn === 'mating' ? 'b-mating' : barn === 'gest' ? 'b-gest' : 'b-farrow';
+    return '<div class="barn ' + cls + '">' +
+      '<div class="barn-head"><h2>' + title + '</h2><span class="sub">' + en + '</span>' +
+      '<span class="cap">' + Object.keys(byRoom).length + '/' + spaces + '</span></div>' +
+      '<div class="rooms">' + cells + '</div></div>';
+  };
+
+  const washExtra = byRoom => {
+    const wi = washInfo(state.day);
+    if (!wi || byRoom[wi.room]) return;
+    byRoom[wi.room] = '<div class="room" style="--stage:var(--wash);--stage-bg:var(--wash-bg)">' +
+      '<span class="rno">分-' + (wi.room + 1) + '</span>' +
+      '<div class="room-top"><span class="lotno" style="--lot:var(--wash);background:var(--wash)">洗浄</span>' +
+      '<span class="chip">洗浄・乾燥</span></div>' +
+      '<div class="room-detail">L' + pad(wi.g) + ' 離乳跡 / 洗い約3日＋乾燥 → 火曜に次ロット導入</div>' +
+      '<div class="stay"><i style="width:50%"></i></div>' + stallGrid('farrow', 'var(--wash)') + '</div>';
+  };
+
+  $('#barns').innerHTML =
+    build('mating', '交配舎', 'MATING・約35日在舎', state.sp.mating) +
+    build('gest', '妊娠舎', 'GESTATION・約77日在舎', state.sp.gest) +
+    build('farrow', '分娩舎', 'FARROWING・約28日在舎', state.sp.farrow, washExtra);
+
+  document.querySelectorAll('.room[data-g]').forEach(el => {
+    el.addEventListener('click', () => openModal(+el.dataset.g));
+  });
+}
+
+/* ---------- 離乳舎・肥育舎（AIAO・1群1部屋・空舎期間つき） ---------- */
+function growBarn(kind, title, en) {
+  const conf = state[kind];
+  const rooms = growRooms(kind);
+  const occ = rooms.filter(r => r.occ);
+  const washN = rooms.filter(r => r.wash).length;
+  const totalHeads = occ.reduce((s, r) => s + r.occ.heads, 0);
+  const notes = [];
+  let cells = '';
+  rooms.forEach((r, i) => {
+    const label = (kind === 'nursery' ? '離' : '肥') + '-' + (i + 1);
+    if (r.occ) {
+      const o = r.occ, over = o.heads > conf.cap;
+      const fill = Math.min(o.heads, conf.cap), free = Math.max(0, conf.cap - o.heads);
+      cells += '<div class="grow-room' + (over ? ' mixed' : '') + fcls(o.g) + '">' +
+        '<div class="gr-label"><b>' + label + '</b><span>' + o.heads + '/' + conf.cap + '</span></div>' +
+        '<div class="bar"><div class="seg" style="background:' + lotColor(o.g) + ';flex:' + fill + '" title="L' + pad(o.g) + ' ' + o.age + '日齢 ' + o.heads + '頭">' + o.age + '日齢</div>' +
+        (free > 0 ? '<div class="seg rest" style="flex:' + free + '">余' + free + '</div>' : '') + '</div></div>';
+      if (over) notes.push(label + ' 収容超過（' + o.heads + '/' + conf.cap + '頭・分割収容が必要）');
+    } else if (r.wash) {
+      cells += '<div class="grow-room" style="outline:2px dashed var(--wash);outline-offset:1px">' +
+        '<div class="gr-label"><b>' + label + '</b><span style="color:var(--wash)">空舎</span></div>' +
+        '<div class="bar" style="background:repeating-linear-gradient(45deg,var(--wash-bg) 0 6px,#fff 6px 12px)"><div class="seg rest" style="flex:1;color:var(--wash);font-weight:700">洗浄・消毒・乾燥</div></div></div>';
+    } else {
+      cells += '<div class="grow-room">' +
+        '<div class="gr-label"><b>' + label + '</b><span>0/' + conf.cap + '</span></div>' +
+        '<div class="bar"><div class="seg rest" style="flex:1">空</div></div></div>';
+    }
+  });
+  if (growNeed(kind) > conf.rooms) notes.push('<b>区画不足</b>：在舎に要' + growNeed(kind) + '区画（現' + conf.rooms + '）→ 飼養週数の短縮を検討');
+  const legend = occ.slice().sort((a, b) => a.occ.age - b.occ.age).map(r =>
+    '<span class="co"><i style="background:' + lotColor(r.occ.g) + '"></i>' + r.occ.age + '日齢 ' + r.occ.heads + '頭</span>').join('');
+  return '<div class="barn b-' + kind + '">' +
+    '<div class="barn-head"><h2>' + title + '</h2><span class="sub">' + en + '</span>' +
+    '<span class="cap">' + occ.length + '群 ' + totalHeads + '頭' + (washN ? ' ／ 空舎' + washN : '') + '</span></div>' +
+    '<div class="cohort-legend">' + (legend || '<span class="co">在舎なし</span>') + '</div>' +
+    '<div class="grow-rooms">' + cells + '</div>' +
+    (notes.length ? '<div class="grow-note">' + notes.join('<br>') + '</div>' : '') +
+    '</div>';
+}
+
+function renderGrow() {
+  const nurEnd = state.lact * 7 + state.nursery.weeks * 7;
+  const finEnd = nurEnd + state.finisher.weeks * 7;
+  $('#grow').innerHTML =
+    growBarn('nursery', '離乳舎', 'NURSERY・' + (state.lact * 7) + '〜' + nurEnd + '日齢（収容' + state.nursery.weeks + '週＋空舎' + state.nursery.idle + '週）') +
+    growBarn('finisher', '肥育舎', 'FINISHER・' + nurEnd + '〜' + finEnd + '日齢（収容' + state.finisher.weeks + '週＋空舎' + state.finisher.idle + '週・出荷）');
+}
+
+/* ---------- ガント（週単位・金曜時点の所在） ---------- */
+function renderGantt() {
+  const w0 = curWeek();
+  const from = w0 - 2, to = w0 + G() + 1;
+  let html = '<table class="gantt"><tr><th class="rowh">ロット</th>';
+  for (let w = from; w <= to; w++) {
+    const cur = w === w0 ? ' class="cur"' : '';
+    html += '<th' + cur + ' data-w="' + w + '" title="クリックでこの週へ">' + fmtMD(dateOf(w * 7)) + '</th>';
+  }
+  html += '</tr>';
+  for (let i = 1; i <= G(); i++) {
+    const trCls = state.follow != null && i !== state.follow ? ' class="dim"' : '';
+    html += '<tr' + trCls + '><td class="rowh" data-g="' + i + '" title="クリックで追跡ON/OFF"><span class="dot" style="background:' + lotColor(i) + '"></span>L' + pad(i) + '</td>';
+    for (let w = from; w <= to; w++) {
+      const D = dOf(i, w * 7 + 4); // 金曜時点（週内の移動完了後）
+      const b = barnOf(D);
+      const cur = w === w0 ? ' cur' : '';
+      let mark = '';
+      if (D >= 2 && D < 9) mark = '<span>交</span>';
+      else if (D >= 115 && D < 122) mark = '<span>分</span>';
+      else if (D >= C() - 5) mark = '<span>離</span>';
+      html += '<td class="c-' + b + cur + '">' + mark + '</td>';
+    }
+    html += '</tr>';
+  }
+  html += '</table>';
+  $('#ganttScroll').innerHTML = html;
+  document.querySelectorAll('#ganttScroll th[data-w]').forEach(el =>
+    el.addEventListener('click', () => { stopPlay(); state.day = +el.dataset.w * 7 + mod(state.day, 7); render(); }));
+  document.querySelectorAll('#ganttScroll .rowh[data-g]').forEach(el =>
+    el.addEventListener('click', () => setFollow(+el.dataset.g)));
+}
+
+/* ============================================================
+   モーダル・設定・ナビ
+============================================================ */
+let editG = null;
+function openModal(g) {
+  stopPlay();
+  editG = g;
+  $('#mFollow').textContent = state.follow === g ? '🎯 追跡解除' : '🎯 追跡';
+  const D = dOf(g, state.day);
+  const st = stageOf(D, g);
+  const si = stayInfo(D);
+  const nm = nextMove(D);
+  $('#mLot').textContent = 'L' + pad(g);
+  $('#mLot').style.background = lotColor(g);
+  $('#mChip').textContent = st.chip;
+  $('#mChip').style.background = st.color;
+  $('#mHeads').value = headsOf(g);
+  $('#mMemo').value = state.lotMemos[g] || '';
+  $('#mInfo').innerHTML =
+    '現在: ' + st.detail + '<br>' +
+    si.label + ' 在舎 <b>' + si.day + '/' + si.len + '日</b> ・ 次回移動 <b>' +
+    fmtMD(dateOf(state.day + nm.at)) + '（' + nm.dow + '）→ ' + nm.to + '</b><br>' +
+    '見込み分娩腹数: <b>' + littersOf(g) + '腹</b>（分娩率 ' + state.rate + '%）・離乳見込み <b>' +
+    Math.round(littersOf(g) * state.weanAvg) + '頭</b>';
+  $('#overlay').classList.add('show');
+}
+function closeModal() { $('#overlay').classList.remove('show'); editG = null; }
+
+$('#mSave').addEventListener('click', () => {
+  if (editG == null) return;
+  const h = parseInt($('#mHeads').value, 10);
+  if (!isNaN(h) && h >= 0) state.lotHeads[editG] = h;
+  const memo = $('#mMemo').value.trim();
+  if (memo) state.lotMemos[editG] = memo; else delete state.lotMemos[editG];
+  closeModal(); render();
+});
+$('#mCancel').addEventListener('click', closeModal);
+$('#mFollow').addEventListener('click', () => {
+  const g = editG;
+  closeModal();
+  if (g != null) setFollow(g);
+});
+$('#overlay').addEventListener('click', e => { if (e.target === $('#overlay')) closeModal(); });
+
+function fillSettings() {
+  $('#setSystem').value = state.system;
+  $('#setSows').value = state.sows;
+  $('#setLact').value = state.lact;
+  $('#setLact').disabled = state.system !== 'weekly';
+  $('#setRate').value = state.rate;
+  $('#setMatingSp').value = state.sp.mating;
+  $('#setGestSp').value = state.sp.gest;
+  $('#setFarrowSp').value = state.sp.farrow;
+  $('#setAnchor').value = state.anchor;
+  $('#setWeanAvg').value = state.weanAvg;
+  $('#setNurRooms').value = state.nursery.rooms;
+  $('#setNurCap').value = state.nursery.cap;
+  $('#setNurWeeks').value = state.nursery.weeks;
+  $('#setNurIdle').value = state.nursery.idle;
+  $('#setFinRooms').value = state.finisher.rooms;
+  $('#setFinCap').value = state.finisher.cap;
+  $('#setFinWeeks').value = state.finisher.weeks;
+  $('#setFinIdle').value = state.finisher.idle;
+  $('#setExtIn').value = state.finisher.extIn;
+  $('#setMatingCols').value = state.layout.mating.cols;
+  $('#setGestCols').value = state.layout.gest.cols;
+  $('#setFarrowCols').value = state.layout.farrow.cols;
+  $('#setNurCols').value = state.layout.nursery.cols;
+  $('#setFarrowSrow').value = state.layout.farrow.srow;
+  $('#setFarrowScol').value = state.layout.farrow.scol;
+}
+
+function applySystemState(name) {
+  const p = SYSTEMS[name];
+  if (!p) return false;
+  state.system = name;
+  if (p.lact) state.lact = p.lact;
+  state.sp = { ...p.sp };
+  state.nursery = { ...p.nursery };
+  state.finisher = { ...p.finisher, extIn: 0 };
+  state.lotHeads = {}; state.lotMemos = {};
+  return true;
+}
+function applySystem(name) {
+  if (!applySystemState(name)) return;
+  fillSettings();
+  render();
+}
+
+/* ============================================================
+   レイアウトの Excel / CSV 読み込み・書き出し
+============================================================ */
+function buildCSV() {
+  const L = state.layout;
+  const rows = [
+    ['項目', '値'],
+    ['方式', state.system],
+    ['母豚規模', state.sows],
+    ['哺乳週数', state.lact],
+    ['分娩率', state.rate],
+    ['平均離乳頭数', state.weanAvg],
+    ['外部導入', state.finisher.extIn],
+    ['基準週月曜', state.anchor],
+    [],
+    ['舎名', '区画数', '収容頭数', '飼養週数', '空舎週', '表示列数', 'ストール数', 'ストール列数'],
+    ['交配舎', state.sp.mating, '', '', '', L.mating.cols, L.mating.srow || '', L.mating.scol || ''],
+    ['妊娠舎', state.sp.gest, '', '', '', L.gest.cols, L.gest.srow || '', L.gest.scol || ''],
+    ['分娩舎', state.sp.farrow, '', '', '', L.farrow.cols, L.farrow.srow || '', L.farrow.scol || ''],
+    ['離乳舎', state.nursery.rooms, state.nursery.cap, state.nursery.weeks, state.nursery.idle, L.nursery.cols, '', ''],
+    ['肥育舎', state.finisher.rooms, state.finisher.cap, state.finisher.weeks, state.finisher.idle, L.finisher.cols, '', ''],
+  ];
+  return rows.map(r => (r || []).join(',')).join('\r\n');
+}
+
+function downloadCSV() {
+  const blob = new Blob(['﻿' + buildCSV()], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'pigflow-layout.csv';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function parseCSV(t) {
+  return t.replace(/\r/g, '').split('\n').filter(l => l.trim().length).map(line => {
+    const out = []; let cur = '', q = false;
+    for (const ch of line) {
+      if (q) { if (ch === '"') q = false; else cur += ch; }
+      else if (ch === '"') q = true;
+      else if (ch === ',') { out.push(cur); cur = ''; }
+      else cur += ch;
+    }
+    out.push(cur);
+    return out;
+  });
+}
+
+function loadXLSX() {
+  if (window.XLSX) return Promise.resolve();
+  return new Promise((res, rej) => {
+    const s = document.createElement('script');
+    s.src = './vendor/xlsx.full.min.js';
+    s.onload = res;
+    s.onerror = () => rej(new Error('Excelライブラリの取得に失敗（オフライン時はCSVをご利用ください）'));
+    document.head.appendChild(s);
+  });
+}
+
+function normSys(v) {
+  const raw = String(v).trim();
+  /* カタカナ名は長音変換の前に判定（「スリーセブン」の「ー」対策） */
+  if (/ウィークリー|weekly|毎週/i.test(raw)) return 'weekly';
+  if (/ツーテン/.test(raw)) return '2-10';
+  if (/スリーセブン/.test(raw)) return '3-7';
+  if (/フォーファイブ/.test(raw)) return '4-5';
+  const s = raw.toLowerCase()
+    .replace(/[０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0))
+    .replace(/[－ー―‐]/g, '-');
+  if (/2-?10/.test(s)) return '2-10';
+  if (/3-?7/.test(s)) return '3-7';
+  if (/4-?5/.test(s)) return '4-5';
+  return null;
+}
+
+function applyImport(rows) {
+  const norm = c => String(c ?? '').trim();
+  const num = c => { const x = parseFloat(norm(c)); return isNaN(x) ? null : x; };
+  const msgs = [];
+  /* 方式は最初に適用（区画などを推奨値でリセット→後続行で上書き） */
+  for (const r of rows) {
+    if (norm(r[0]) === '方式') {
+      const sys = normSys(r[1]);
+      if (sys && applySystemState(sys)) msgs.push('方式=' + sys);
+      break;
+    }
+  }
+  const L = state.layout;
+  rows.forEach(r => {
+    const k = norm(r[0]);
+    const v1 = num(r[1]);
+    if (k === '母豚規模' && v1 > 0) { state.sows = Math.round(v1); state.lotHeads = {}; msgs.push('母豚' + state.sows); }
+    else if (k === '哺乳週数' && (v1 === 3 || v1 === 4) && state.system === 'weekly') { state.lact = v1; msgs.push('哺乳' + v1 + '週'); }
+    else if (k === '分娩率' && v1 >= 50 && v1 <= 100) { state.rate = Math.round(v1); msgs.push('分娩率' + state.rate + '%'); }
+    else if (k === '平均離乳頭数' && v1 > 0) { state.weanAvg = v1; msgs.push('離乳' + v1 + '頭/腹'); }
+    else if (k === '外部導入' && v1 >= 0) { state.finisher.extIn = Math.round(v1); }
+    else if (k === '基準週月曜' && norm(r[1])) {
+      const d = new Date(norm(r[1]) + 'T12:00:00');
+      if (!isNaN(d)) { state.anchor = mondayOf(d).toISOString().slice(0, 10); msgs.push('基準' + state.anchor); }
+    }
+    else if (['交配舎', '妊娠舎', '分娩舎', '離乳舎', '肥育舎'].includes(k)) {
+      const [rooms, cap, weeks, idle, cols, srow, scol] = [1, 2, 3, 4, 5, 6, 7].map(i => num(r[i]));
+      const lay = { '交配舎': 'mating', '妊娠舎': 'gest', '分娩舎': 'farrow', '離乳舎': 'nursery', '肥育舎': 'finisher' }[k];
+      if (['mating', 'gest', 'farrow'].includes(lay)) {
+        if (rooms >= 1) state.sp[lay] = Math.round(rooms);
+      } else {
+        const conf = state[lay === 'nursery' ? 'nursery' : 'finisher'];
+        if (rooms >= 1) conf.rooms = Math.round(rooms);
+        if (cap >= 10) conf.cap = Math.round(cap);
+        if (weeks >= 1) conf.weeks = Math.round(weeks);
+        if (idle != null && idle >= 0) conf.idle = Math.round(idle);
+      }
+      if (cols >= 1) L[lay].cols = Math.round(cols);
+      if (srow != null && srow >= 0) L[lay].srow = Math.round(srow);
+      if (scol != null && scol >= 0) L[lay].scol = Math.round(scol);
+      msgs.push(k);
+    }
+  });
+  return msgs;
+}
+
+async function importFile(f) {
+  let rows;
+  if (/\.(xlsx|xls)$/i.test(f.name)) {
+    await loadXLSX();
+    const wb = XLSX.read(await f.arrayBuffer());
+    rows = [];
+    wb.SheetNames.forEach(n => {
+      rows = rows.concat(XLSX.utils.sheet_to_json(wb.Sheets[n], { header: 1, raw: true }));
+    });
+  } else {
+    const buf = await f.arrayBuffer();
+    let txt = new TextDecoder('utf-8', { fatal: false }).decode(buf);
+    if (txt.includes('�')) txt = new TextDecoder('shift_jis').decode(buf); // Excel保存のSJIS CSV対応
+    rows = parseCSV(txt);
+  }
+  const msgs = applyImport(rows);
+  if (!msgs.length) throw new Error('認識できる行がありませんでした。「📤 CSVを書き出す」の形式に合わせてください');
+  fillSettings();
+  render();
+  return msgs;
+}
+
+function bindSettings() {
+  fillSettings();
+  $('#setSystem').addEventListener('change', e => applySystem(e.target.value));
+  const num = (id, fn, min = 1) => $(id).addEventListener('change', e => {
+    const v = parseFloat(e.target.value);
+    if (!isNaN(v) && v >= min) { fn(v); render(); }
+  });
+  num('#setSows', v => { state.sows = Math.round(v); state.lotHeads = {}; }, 20);
+  $('#setLact').addEventListener('change', e => {
+    state.lact = parseInt(e.target.value, 10);
+    state.lotHeads = {}; state.lotMemos = {};
+    render();
+  });
+  num('#setRate', v => { state.rate = Math.round(v); }, 50);
+  num('#setMatingSp', v => { state.sp.mating = Math.round(v); });
+  num('#setGestSp', v => { state.sp.gest = Math.round(v); });
+  num('#setFarrowSp', v => { state.sp.farrow = Math.round(v); });
+  num('#setWeanAvg', v => { state.weanAvg = v; });
+  num('#setNurRooms', v => { state.nursery.rooms = Math.round(v); });
+  num('#setNurCap', v => { state.nursery.cap = Math.round(v); }, 10);
+  num('#setNurWeeks', v => { state.nursery.weeks = Math.round(v); });
+  num('#setNurIdle', v => { state.nursery.idle = Math.round(v); }, 0);
+  num('#setFinRooms', v => { state.finisher.rooms = Math.round(v); });
+  num('#setFinCap', v => { state.finisher.cap = Math.round(v); }, 10);
+  num('#setFinWeeks', v => { state.finisher.weeks = Math.round(v); });
+  num('#setFinIdle', v => { state.finisher.idle = Math.round(v); }, 0);
+  num('#setExtIn', v => { state.finisher.extIn = Math.round(v); }, 0);
+  num('#setMatingCols', v => { state.layout.mating.cols = Math.round(v); });
+  num('#setGestCols', v => { state.layout.gest.cols = Math.round(v); });
+  num('#setFarrowCols', v => { state.layout.farrow.cols = Math.round(v); });
+  num('#setNurCols', v => { state.layout.nursery.cols = Math.round(v); });
+  num('#setFarrowSrow', v => { state.layout.farrow.srow = Math.round(v); }, 0);
+  num('#setFarrowScol', v => { state.layout.farrow.scol = Math.round(v); }, 0);
+  $('#setAnchor').addEventListener('change', e => {
+    if (e.target.value) {
+      const d = mondayOf(new Date(e.target.value + 'T12:00:00'));
+      state.anchor = d.toISOString().slice(0, 10);
+      e.target.value = state.anchor;
+      render();
+    }
+  });
+}
+
+/* フロー再生（日送りアニメーション） */
+let playTimer = null;
+function stopPlay() {
+  if (!playTimer) return;
+  clearInterval(playTimer);
+  playTimer = null;
+  $('#playBtn').textContent = '▶ 再生';
+  $('#playBtn').classList.remove('playing');
+}
+function togglePlay() {
+  if (playTimer) { stopPlay(); return; }
+  $('#playBtn').textContent = '■ 停止';
+  $('#playBtn').classList.add('playing');
+  playTimer = setInterval(() => { state.day++; render(); }, 650);
+}
+$('#playBtn').addEventListener('click', togglePlay);
+
+$('#prevWk').addEventListener('click', () => { stopPlay(); state.day -= 7; render(); });
+$('#nextWk').addEventListener('click', () => { stopPlay(); state.day += 7; render(); });
+$('#prevD').addEventListener('click', () => { stopPlay(); state.day--; render(); });
+$('#nextD').addEventListener('click', () => { stopPlay(); state.day++; render(); });
+$('#todayW').addEventListener('click', () => { stopPlay(); state.day = todayIdx(); render(); });
+$('#printBtn').addEventListener('click', () => { stopPlay(); window.print(); });
+$('#exportBtn').addEventListener('click', downloadCSV);
+$('#importBtn').addEventListener('click', () => $('#importFile').click());
+$('#importFile').addEventListener('change', async e => {
+  const f = e.target.files[0];
+  if (!f) return;
+  try {
+    const msgs = await importFile(f);
+    alert('読み込み完了：' + msgs.join(' / '));
+  } catch (err) {
+    alert('読み込み失敗：' + err.message);
+  }
+  e.target.value = '';
+});
+$('#resetBtn').addEventListener('click', () => {
+  if (!confirm('設定・頭数・メモをすべて例データ（初期値）に戻します。よろしいですか？')) return;
+  stopPlay();
+  localStorage.removeItem(LS_KEY);
+  state = defaults();
+  fillSettings();
+  render();
+});
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+  if (e.key === 'ArrowLeft') { stopPlay(); state.day -= e.shiftKey ? 7 : 1; render(); }
+  if (e.key === 'ArrowRight') { stopPlay(); state.day += e.shiftKey ? 7 : 1; render(); }
+  if (e.key === ' ') { e.preventDefault(); togglePlay(); }
+  if (e.key === 'Escape' && state.follow != null) { state.follow = null; render(); }
+});
+
+bindSettings();
+render();
+</script>
+</body>
+</html>
