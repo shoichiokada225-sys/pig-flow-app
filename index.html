@@ -806,7 +806,10 @@ function load() {
     return s;
   } catch (e) { return defaults(); }
 }
-function save() { localStorage.setItem(LS_KEY, JSON.stringify(state)); }
+function save() {
+  try { localStorage.setItem(LS_KEY, JSON.stringify(state)); }
+  catch (e) { /* プライベートモード・容量超過時も描画は継続する */ }
+}
 
 /* ---------- 基礎計算 ---------- */
 function mod(n, m) { return ((n % m) + m) % m; } // 関数宣言（巻き上げ）: defaults()/load()が先に実行されるため
@@ -1593,7 +1596,7 @@ function applyImport(rows) {
     else if (k === '哺乳週数' && (v1 === 3 || v1 === 4) && state.system === 'weekly') { state.lact = v1; msgs.push('哺乳' + v1 + '週'); }
     else if (k === '分娩率' && v1 >= 50 && v1 <= 100) { state.rate = Math.round(v1); msgs.push('分娩率' + state.rate + '%'); }
     else if (k === '平均離乳頭数' && v1 > 0) { state.weanAvg = v1; msgs.push('離乳' + v1 + '頭/腹'); }
-    else if (k === '外部導入' && v1 >= 0) { state.finisher.extIn = Math.round(v1); }
+    else if (k === '外部導入' && v1 != null && v1 >= 0) { state.finisher.extIn = Math.round(v1); }
     else if (k === '基準週月曜' && norm(r[1])) {
       const d = new Date(norm(r[1]) + 'T12:00:00');
       if (!isNaN(d)) { state.anchor = mondayOf(d).toISOString().slice(0, 10); msgs.push('基準' + state.anchor); }
