@@ -796,13 +796,15 @@ function load() {
     const raw = localStorage.getItem(LS_KEY);
     if (!raw) return defaults();
     const d = defaults();
-    const s = Object.assign(d, JSON.parse(raw));
-    s.sp = Object.assign(d.sp, s.sp);
-    s.nursery = Object.assign(d.nursery, s.nursery);
-    s.finisher = Object.assign(d.finisher, s.finisher);
-    s.layout = Object.assign(d.layout, s.layout || {});
+    const p = JSON.parse(raw);
+    /* dを直接上書きするとd.sp等の参照が失われ、旧データの欠損キーが補完されない */
+    const s = Object.assign({}, d, p);
+    s.sp = Object.assign({}, d.sp, p.sp);
+    s.nursery = Object.assign({}, d.nursery, p.nursery);
+    s.finisher = Object.assign({}, d.finisher, p.finisher);
+    s.layout = {};
     for (const k of ['mating', 'gest', 'farrow', 'nursery', 'finisher'])
-      s.layout[k] = Object.assign(d.layout[k], s.layout[k] || {});
+      s.layout[k] = Object.assign({}, d.layout[k], (p.layout || {})[k]);
     return s;
   } catch (e) { return defaults(); }
 }
@@ -1596,7 +1598,7 @@ function applyImport(rows) {
     else if (k === '哺乳週数' && (v1 === 3 || v1 === 4) && state.system === 'weekly') { state.lact = v1; msgs.push('哺乳' + v1 + '週'); }
     else if (k === '分娩率' && v1 >= 50 && v1 <= 100) { state.rate = Math.round(v1); msgs.push('分娩率' + state.rate + '%'); }
     else if (k === '平均離乳頭数' && v1 > 0) { state.weanAvg = v1; msgs.push('離乳' + v1 + '頭/腹'); }
-    else if (k === '外部導入' && v1 != null && v1 >= 0) { state.finisher.extIn = Math.round(v1); }
+    else if (k === '外部導入' && v1 != null && v1 >= 0) { state.finisher.extIn = Math.round(v1); msgs.push('外部導入' + state.finisher.extIn); }
     else if (k === '基準週月曜' && norm(r[1])) {
       const d = new Date(norm(r[1]) + 'T12:00:00');
       if (!isNaN(d)) { state.anchor = mondayOf(d).toISOString().slice(0, 10); msgs.push('基準' + state.anchor); }
